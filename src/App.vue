@@ -2,25 +2,22 @@
   <el-container>
     <el-header>Header</el-header>
     <el-container :style="{ minHeight: 0 }">
-      <Splitpanes class="default-theme" @resize="paneSize = $event[0].size">
-        <Pane :size="paneSize">
+      <LazySplitpanes local-storage-key="asset-list-width" :default-left-width="60">
+        <template #left>
           <AssetList />
-        </Pane>
-        <Pane>Main2</Pane>
-      </Splitpanes>
+        </template>
+        <template #right>Main2</template>
+      </LazySplitpanes>
     </el-container>
   </el-container>
 </template>
 
 <script setup lang="ts">
-import { useLocalStorage } from '@vueuse/core';
-import { Splitpanes, Pane } from 'splitpanes';
+import LazySplitpanes from './components/LazySplitpanes.vue';
 import AssetList from './views/AssetList.vue';
-
-const paneSize = useLocalStorage('asset-list-width', 60);
 </script>
 
-<style lang="less" scoped>
+<style lang="scss" scoped>
 .main {
   padding: 0;
 }

@@ -1,8 +1,12 @@
-import type { Bundle, BundleLoadOptions } from '@arkntools/unity-js';
 import { AssetType, loadAssetBundle } from '@arkntools/unity-js';
+import type { AssetObject, Bundle, BundleLoadOptions } from '@arkntools/unity-js';
+import { expose } from 'comlink';
 import { md5 as calcMd5 } from 'js-md5';
+import { toTrackedPromise } from '@/utils/trackedPromise';
+import type { TrackedPromise } from '@/utils/trackedPromise';
 
 export interface AssetInfo {
+  key: string;
   fileId: string;
   fileName: string;
   name: string;
@@ -10,6 +14,18 @@ export interface AssetInfo {
   type: string;
   pathId: string;
   size: number;
+  /** `undefined` means not loaded, `null` means error */
+  data: string | null | undefined;
+}
+
+export interface FileLoadingError {
+  name: string;
+  error: string;
+}
+
+export interface FileLoadingProgress {
+  name?: string;
+  assetNum?: number;
 }
 
 const showAssetType = new Set([AssetType.TextAsset, AssetType.Sprite, AssetType.Texture2D]);
@@ -21,31 +37,31 @@ const assetTypeNameMap: Partial<Record<AssetType, string>> = {
 
 export class AssetManager {
   private bundleMap = new Map<string, Bundle>();
-  private imageMap = new Map<string, { url: string; blob: Blob }>();
+  private imageMap = new Map<string, TrackedPromise<{ url: string; blob: Blob } | undefined>>();
+  private textDecoder = new TextDecoder('utf-8');
 
   clear() {
     this.bundleMap.clear();
-    this.imageMap.forEach(({ url }) => {
-      URL.revokeObjectURL(url);
+    this.imageMap.forEach(async img => {
+      const url = (await img)?.url;
+      if (url) URL.revokeObjectURL(url);
     });
     this.imageMap.clear();
   }
 
-  async loadFiles(files: File[], options?: BundleLoadOptions) {
-    const errors: Array<{ name: string; error: Error }> = [];
-    const infos = (
-      await Promise.all(
-        files.map(async file => {
-          try {
-            const info = await this.loadFile(file, options);
-            if (info) return info;
-          } catch (error: any) {
-            errors.push({ name: file.name, error });
-          }
-          return [];
-        }),
-      )
-    ).flat();
+  async loadFiles(files: File[], options?: BundleLoadOptions, onProgress?: (progress: FileLoadingProgress) => void) {
+    const errors: Array<FileLoadingError> = [];
+    const infos: AssetInfo[] = [];
+    for (const file of files) {
+      try {
+        onProgress?.({ name: file.name });
+        const result = await this.loadFile(file, options);
+        if (result.length) infos.push(...result);
+        onProgress?.({ assetNum: infos.length });
+      } catch (error) {
+        errors.push({ name: file.name, error: String(error) });
+      }
+    }
     return { errors, infos };
   }
 
@@ -53,29 +69,27 @@ export class AssetManager {
     return (await this.loadImage(fileId, pathId))?.url;
   }
 
-  async getData(fileId: string, pathId: string) {
-    const obj = this.getAssetObj(fileId, pathId);
-    if (obj?.type === AssetType.TextAsset) return obj.data;
-  }
-
   private getAssetObj(fileId: string, pathId: string) {
     return this.bundleMap.get(fileId)?.objectMap.get(pathId);
   }
 
   private async loadImage(fileId: string, pathId: string) {
-    const key = `${fileId},${pathId}`;
+    const key = this.getAssetKey(fileId, pathId);
     if (this.imageMap.has(key)) return this.imageMap.get(key);
 
     const obj = this.getAssetObj(fileId, pathId);
     if (!obj || (obj.type !== AssetType.Sprite && obj.type !== AssetType.Texture2D)) return;
 
-    const image = await obj.getImage();
-    if (!image) return;
+    const result = (async () => {
+      const image = await obj.getImage();
+      if (!image) return;
 
-    const blob = new Blob([image.buffer], { type: 'image/png' });
-    const url = URL.createObjectURL(blob);
-    const result = { blob, url };
-    this.imageMap.set(key, result);
+      const blob = new Blob([image.buffer], { type: 'image/png' });
+      const url = URL.createObjectURL(blob);
+      return { blob, url };
+    })();
+
+    this.imageMap.set(key, toTrackedPromise(result));
 
     return result;
   }
@@ -88,17 +102,47 @@ export class AssetManager {
     const bundle = this.bundleMap.get(md5) ?? (await loadAssetBundle(buffer, options));
     if (!this.bundleMap.has(md5)) this.bundleMap.set(md5, bundle);
 
-    return bundle.objects
-      .filter(obj => showAssetType.has(obj.type))
-      .map(
-        ({ name, type, pathId }): AssetInfo => ({
-          name,
-          container: bundle.containerMap?.get(pathId) ?? '',
-          type: assetTypeNameMap[type] ?? '',
-          pathId,
-          size: 0, // TODO size
-          ...fileInfo,
+    return Promise.all(
+      bundle.objects
+        .filter(obj => showAssetType.has(obj.type))
+        .map(async (obj): Promise<AssetInfo> => {
+          const { name, type, pathId } = obj;
+          const key = this.getAssetKey(fileInfo.fileId, pathId);
+          return {
+            key,
+            name,
+            container: bundle.containerMap?.get(pathId) ?? '',
+            type: assetTypeNameMap[type] ?? '',
+            pathId,
+            size: 0, // TODO size
+            data: await this.getAssetData(obj, key),
+            ...fileInfo,
+          };
         }),
-      );
+    );
+  }
+
+  private async getAssetData(obj: AssetObject, key: string) {
+    try {
+      switch (obj.type) {
+        case AssetType.TextAsset:
+          return this.textDecoder.decode(obj.data);
+        case AssetType.Sprite:
+        case AssetType.Texture2D: {
+          const imgPromise = this.imageMap.get(key);
+          if (imgPromise?.isFulfilled()) {
+            return (await imgPromise)?.url ?? null;
+          }
+          break;
+        }
+      }
+    } catch (error) {
+      console.error(error);
+      return null;
+    }
+  }
+
+  private getAssetKey(fileId: string, pathId: string) {
+    return `${fileId},${pathId}`;
   }
 }
