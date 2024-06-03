@@ -69,23 +69,23 @@ const switchColumnSort = (field: string) => {
 const menuConfig: VxeTablePropTypes.MenuConfig<AssetInfo> = reactive({
   header: {
     options: [
-      [{ code: 'hideColumn', name: 'Hide this column', disabled: false }],
+      [{ code: 'hideColumn', name: 'Hide this column', prefixIcon: 'vxe-icon-eye-fill-close', disabled: false }],
       [
-        { code: 'sortAsc', name: 'Sort ↑ asc', visible: true, disabled: false },
-        { code: 'sortDesc', name: 'Sort ↓ desc', visible: true, disabled: false },
+        { code: 'sortAsc', name: 'Sort asc', prefixIcon: '', visible: true, disabled: false },
+        { code: 'sortDesc', name: 'Sort ↓ desc', prefixIcon: '', visible: true, disabled: false },
         { code: 'clearSort', name: 'Clear sort', visible: true, disabled: false },
       ],
       [
-        { code: 'resetResizable', name: 'Reset all widths' },
-        { code: 'resetVisible', name: 'Reset all visibility', disabled: false },
+        { code: 'resetResizable', name: 'Reset all widths', prefixIcon: 'vxe-icon-ellipsis-h' },
+        { code: 'resetVisible', name: 'Reset all visibility', prefixIcon: 'vxe-icon-eye-fill', disabled: false },
       ],
     ],
   },
   body: {
     options: [
       [
-        { code: 'copy', name: 'Copy text' },
-        { code: 'export', name: 'Export select asset' },
+        { code: 'copy', name: 'Copy text', prefixIcon: 'vxe-icon-copy' },
+        { code: 'export', name: 'Export select asset', prefixIcon: 'vxe-icon-save' },
       ],
     ],
   },
@@ -110,6 +110,9 @@ const menuConfig: VxeTablePropTypes.MenuConfig<AssetInfo> = reactive({
       sortOption.forEach(item => {
         item.visible = true;
       });
+      const isNumber = typeof (store.assetInfos[0] as any)?.[column.field] === 'number';
+      sortOption[0].prefixIcon = isNumber ? 'vxe-icon-sort-numeric-asc' : 'vxe-icon-sort-alpha-asc';
+      sortOption[1].prefixIcon = isNumber ? 'vxe-icon-sort-numeric-desc' : 'vxe-icon-sort-alpha-desc';
     } else {
       sortOption.forEach(item => {
         item.visible = false;

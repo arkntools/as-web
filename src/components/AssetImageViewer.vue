@@ -1,41 +1,54 @@
 <template>
-  <div v-if="props.asset" class="asset-image-viewer transparent-gird">
+  <div class="asset-image-viewer transparent-gird">
     <el-image
       class="image"
       :src="src === null ? undefined : src || PNG_1PX"
       :infinite="false"
       :preview-src-list="src ? [src] : []"
       preview-teleported
+      hide-on-click-modal
       fit="scale-down"
+      @load="handleLoad"
     />
-  </div>
-  <div v-else class="asset-image-viewer">
-    <el-empty description="No preview" style="height: 100%" />
+    <div v-if="imageInfo" class="image-info">
+      <el-text size="large">{{ imageInfo }}</el-text>
+    </div>
+    <div v-if="src === undefined" v-loading="true" class="loading"></div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import type { AssetInfo } from '@/workers/assetManager';
 
 const props = defineProps<{
-  asset?: AssetInfo;
-  loadAsset?: (asset: AssetInfo) => any;
+  asset: AssetInfo;
+  loadAsset: (asset: AssetInfo) => any;
 }>();
 
 const PNG_1PX =
   'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAAtJREFUGFdjYAACAAAFAAGq1chRAAAAAElFTkSuQmCC';
 
-const src = computed(() => props.asset?.data);
+const src = computed(() => props.asset.data);
+
+const imageInfo = ref('');
+
+const handleLoad = (e: Event) => {
+  const img = e.target as HTMLImageElement;
+  if (!img.src?.startsWith('blob:')) return;
+  imageInfo.value = `${img.naturalWidth}×${img.naturalHeight}`;
+};
 
 watch(
   () => props.asset,
   asset => {
     if (!asset) return;
+    imageInfo.value = '';
     if (asset.data === undefined) {
-      props.loadAsset?.(asset);
+      props.loadAsset(asset);
     }
   },
+  { immediate: true },
 );
 </script>
 
@@ -71,6 +84,40 @@ watch(
 
   :deep(img) {
     -webkit-user-drag: none;
+  }
+}
+
+.image-info {
+  position: absolute;
+  top: 0;
+  left: 0;
+  margin-left: 4px;
+  pointer-events: none;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.loading {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  animation: delayIn 0.3s forwards;
+
+  :deep(.el-loading-mask) {
+    background-color: transparent;
+  }
+}
+
+@keyframes delayIn {
+  0% {
+    visibility: hidden;
+  }
+  99% {
+    visibility: hidden;
+  }
+  100% {
+    visibility: visible;
   }
 }
 </style>

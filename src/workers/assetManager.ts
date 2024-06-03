@@ -12,8 +12,9 @@ export interface AssetInfo {
   name: string;
   container: string;
   type: string;
-  pathId: string;
+  pathId: bigint;
   size: number;
+  dump: Record<string, any>;
   /** `undefined` means not loaded, `null` means error */
   data: string | null | undefined;
 }
@@ -29,11 +30,6 @@ export interface FileLoadingProgress {
 }
 
 const showAssetType = new Set([AssetType.TextAsset, AssetType.Sprite, AssetType.Texture2D]);
-const assetTypeNameMap: Partial<Record<AssetType, string>> = {
-  [AssetType.TextAsset]: 'TextAsset',
-  [AssetType.Sprite]: 'Sprite',
-  [AssetType.Texture2D]: 'Texture2D',
-};
 
 export class AssetManager {
   private bundleMap = new Map<string, Bundle>();
@@ -55,7 +51,10 @@ export class AssetManager {
     for (const file of files) {
       try {
         onProgress?.({ name: file.name });
+        const timeLabel = `[worker] load ${file.name}`;
+        console.time(timeLabel);
         const result = await this.loadFile(file, options);
+        console.timeEnd(timeLabel);
         console.log(`[worker] ${result.length} assets loaded from ${file.name}`);
         if (result.length) infos.push(...result);
         onProgress?.({ assetNum: infos.length });
@@ -68,15 +67,15 @@ export class AssetManager {
     return { errors, infos };
   }
 
-  async getImageUrl(fileId: string, pathId: string) {
+  async getImageUrl(fileId: string, pathId: bigint) {
     return (await this.loadImage(fileId, pathId))?.url;
   }
 
-  private getAssetObj(fileId: string, pathId: string) {
+  private getAssetObj(fileId: string, pathId: bigint) {
     return this.bundleMap.get(fileId)?.objectMap.get(pathId);
   }
 
-  private async loadImage(fileId: string, pathId: string) {
+  private async loadImage(fileId: string, pathId: bigint) {
     const key = this.getAssetKey(fileId, pathId);
     if (this.imageMap.has(key)) return this.imageMap.get(key);
 
@@ -84,7 +83,10 @@ export class AssetManager {
     if (!obj || (obj.type !== AssetType.Sprite && obj.type !== AssetType.Texture2D)) return;
 
     const result = (async () => {
+      const timeLabel = `[worker] load image ${obj.name}`;
+      console.time(timeLabel);
       const image = await obj.getImage();
+      console.timeEnd(timeLabel);
       if (!image) return;
 
       const blob = new Blob([image.buffer], { type: 'image/png' });
@@ -109,15 +111,16 @@ export class AssetManager {
       bundle.objects
         .filter(obj => showAssetType.has(obj.type))
         .map(async (obj): Promise<AssetInfo> => {
-          const { name, type, pathId } = obj;
+          const { name, type, pathId, size } = obj;
           const key = this.getAssetKey(fileInfo.fileId, pathId);
           return {
             key,
             name,
             container: bundle.containerMap?.get(pathId) ?? '',
-            type: assetTypeNameMap[type] ?? '',
+            type: AssetType[type] ?? '',
             pathId,
-            size: 0, // TODO size
+            size,
+            dump: obj.dump(),
             data: await this.getAssetData(obj, key),
             ...fileInfo,
           };
@@ -145,7 +148,7 @@ export class AssetManager {
     }
   }
 
-  private getAssetKey(fileId: string, pathId: string) {
-    return `${fileId},${pathId}`;
+  private getAssetKey(fileId: string, pathId: bigint) {
+    return `${fileId}_${pathId}`;
   }
 }

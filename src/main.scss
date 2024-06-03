@@ -10,6 +10,7 @@ body {
   display: flex;
   height: 100%;
   user-select: none;
+  --el-border-color: rgb(232, 234, 236);
 }
 
 .splitpanes.default-theme {
@@ -20,7 +21,8 @@ body {
   &#{$splitter},
   & #{$splitter} {
     width: 8px;
-    border-right: 1px solid #eee;
+    border-right: 1px solid var(--el-border-color);
+    border-left-color: rgb(232, 234, 236);
     margin-right: -1px;
     background-color: #fafafa;
     z-index: 10;
