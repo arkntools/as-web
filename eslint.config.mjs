@@ -15,6 +15,7 @@ export default antfu(
       'style/arrow-parens': ['warn', 'as-needed'],
       'style/brace-style': ['warn', '1tbs'],
       'style/indent': 'off',
+      'style/operator-linebreak': 'off',
       'antfu/if-newline': 'off',
       'antfu/top-level-function': 'off',
       'no-console': 'off',

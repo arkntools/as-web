@@ -6,7 +6,9 @@
         <template #left>
           <AssetList />
         </template>
-        <template #right>Main2</template>
+        <template #right>
+          <AssetPreview />
+        </template>
       </LazySplitpanes>
     </el-container>
   </el-container>
@@ -15,10 +17,5 @@
 <script setup lang="ts">
 import LazySplitpanes from './components/LazySplitpanes.vue';
 import AssetList from './views/AssetList.vue';
+import AssetPreview from './views/AssetPreview.vue';
 </script>
-
-<style lang="scss" scoped>
-.main {
-  padding: 0;
-}
-</style>

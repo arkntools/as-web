@@ -56,10 +56,13 @@ export class AssetManager {
       try {
         onProgress?.({ name: file.name });
         const result = await this.loadFile(file, options);
+        console.log(`[worker] ${result.length} assets loaded from ${file.name}`);
         if (result.length) infos.push(...result);
         onProgress?.({ assetNum: infos.length });
       } catch (error) {
         errors.push({ name: file.name, error: String(error) });
+        console.error(`[worker] failed to load ${file.name}`);
+        console.error(error);
       }
     }
     return { errors, infos };

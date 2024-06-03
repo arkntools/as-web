@@ -56,6 +56,7 @@ export const useAssetManager = defineStore('assetManager', () => {
     isLoading,
     fileLoadingErrors,
     loadingProgress,
+    curAssetInfo,
     loadFiles,
     clearFiles,
     loadImage,

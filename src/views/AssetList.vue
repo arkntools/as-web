@@ -1,10 +1,12 @@
 <template>
   <vxe-table
+    id="asset-list-table"
     ref="tableRef"
     :data="store.assetInfos"
     :border="true"
     size="mini"
     height="100%"
+    header-cell-class-name="cursor-pointer"
     :row-config="{
       useKey: true,
       keyField: 'key',
@@ -13,23 +15,26 @@
     }"
     :column-config="{ resizable: true }"
     :menu-config="menuConfig"
+    :keyboard-config="{ isArrow: true }"
+    :custom-config="{ storage: { visible: true, resizable: true } }"
     :scroll-y="{ enabled: true }"
     show-overflow="title"
     show-header-overflow
     @menu-click="handleMenu"
     @cell-menu="handleCellMenu"
     @current-change="handleCurrentChange"
+    @header-cell-click="handleHeaderCellClick"
   >
-    <vxe-column field="name" title="Name" fixed="left" :min-width="120"></vxe-column>
-    <vxe-column field="container" title="Container" :min-width="60"></vxe-column>
-    <vxe-column field="type" title="Type" :width="90"></vxe-column>
+    <vxe-column field="name" title="Name" fixed="left" :min-width="120" sortable></vxe-column>
+    <vxe-column field="container" title="Container" :min-width="60" sortable></vxe-column>
+    <vxe-column field="type" title="Type" :width="90" sortable></vxe-column>
     <vxe-column field="pathId" title="PathID" :min-width="60"></vxe-column>
-    <vxe-column field="size" title="Size" align="right" header-align="left" :width="80"></vxe-column>
+    <vxe-column field="size" title="Size" align="right" header-align="left" :width="80" sortable></vxe-column>
   </vxe-table>
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { onMounted, reactive, ref } from 'vue';
 import type { VxeTableEvents, VxeTableInstance, VxeTablePropTypes } from 'vxe-table';
 import ab from '@/assets/arkn.ab?url';
 import { useAssetManager } from '@/store/assetManager';
@@ -48,7 +53,34 @@ onMounted(async () => {
   await store.loadFiles([await getAbFile()]);
 });
 
-const menuConfig: VxeTablePropTypes.MenuConfig<AssetInfo> = {
+const switchColumnSort = (field: string) => {
+  const $table = tableRef.value;
+  if (!$table) return;
+  const [cur] = $table.getSortColumns();
+  if (!cur || cur.field !== field) {
+    $table.sort(field, 'asc');
+  } else if (cur.order === 'asc') {
+    $table.sort(field, 'desc');
+  } else {
+    $table.clearSort(field);
+  }
+};
+
+const menuConfig: VxeTablePropTypes.MenuConfig<AssetInfo> = reactive({
+  header: {
+    options: [
+      [{ code: 'hideColumn', name: 'Hide this column', disabled: false }],
+      [
+        { code: 'sortAsc', name: 'Sort ↑ asc', visible: true, disabled: false },
+        { code: 'sortDesc', name: 'Sort ↓ desc', visible: true, disabled: false },
+        { code: 'clearSort', name: 'Clear sort', visible: true, disabled: false },
+      ],
+      [
+        { code: 'resetResizable', name: 'Reset all widths' },
+        { code: 'resetVisible', name: 'Reset all visibility', disabled: false },
+      ],
+    ],
+  },
   body: {
     options: [
       [
@@ -57,12 +89,61 @@ const menuConfig: VxeTablePropTypes.MenuConfig<AssetInfo> = {
       ],
     ],
   },
-};
+  visibleMethod: ({ type, options, columns, column }) => {
+    if (type !== 'header') return true;
+    const sortOption = options[1];
+    if (column?.sortable) {
+      const [cur] = tableRef.value!.getSortColumns();
+      if (!cur || cur.field !== column.field) {
+        sortOption[0].disabled = false;
+        sortOption[1].disabled = false;
+        sortOption[2].disabled = !cur;
+      } else if (cur.order === 'asc') {
+        sortOption[0].disabled = true;
+        sortOption[1].disabled = false;
+        sortOption[2].disabled = false;
+      } else {
+        sortOption[0].disabled = false;
+        sortOption[1].disabled = true;
+        sortOption[2].disabled = false;
+      }
+      sortOption.forEach(item => {
+        item.visible = true;
+      });
+    } else {
+      sortOption.forEach(item => {
+        item.visible = false;
+      });
+    }
+    options[0][0].disabled = columns.length <= 1;
+    options[2][1].disabled = columns.length >= 5;
+    return true;
+  },
+});
 
 const handleMenu: VxeTableEvents.MenuClick<AssetInfo> = async ({ menu, row, column }) => {
+  const $table = tableRef.value!;
   switch (menu.code) {
     case 'copy':
       await navigator.clipboard.writeText(String((row as any)[column.field]));
+      break;
+    case 'hideColumn':
+      await $table.hideColumn(column);
+      break;
+    case 'sortAsc':
+      await $table.sort(column.field, 'asc');
+      break;
+    case 'sortDesc':
+      await $table.sort(column.field, 'desc');
+      break;
+    case 'clearSort':
+      await $table.clearSort(column.field);
+      break;
+    case 'resetResizable':
+      await $table.resetColumn({ resizable: true, visible: false });
+      break;
+    case 'resetVisible':
+      await $table.resetColumn({ resizable: false, visible: true });
       break;
   }
 };
@@ -74,6 +155,8 @@ const handleCellMenu: VxeTableEvents.CellMenu<AssetInfo> = ({ row }) => {
 const handleCurrentChange: VxeTableEvents.CurrentChange<AssetInfo> = ({ row }) => {
   store.setCurAssetInfo(row);
 };
-</script>
 
-<style></style>
+const handleHeaderCellClick: VxeTableEvents.HeaderCellClick<AssetInfo> = ({ column }) => {
+  switchColumnSort(column.field);
+};
+</script>
