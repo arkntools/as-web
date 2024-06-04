@@ -18,8 +18,7 @@
 <script setup lang="ts">
 import { useLocalStorage } from '@vueuse/core';
 import { Pane, Splitpanes } from 'splitpanes';
-import type { CSSProperties, Ref } from 'vue';
-import { ref } from 'vue';
+import type { CSSProperties } from 'vue';
 
 const props = withDefaults(
   defineProps<{

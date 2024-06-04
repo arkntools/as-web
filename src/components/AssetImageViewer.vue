@@ -18,12 +18,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
 import type { AssetInfo } from '@/workers/assetManager';
 
 const props = defineProps<{
   asset: AssetInfo;
-  loadAsset: (asset: AssetInfo) => any;
+}>();
+
+const emits = defineEmits<{
+  (e: 'loadImage', asset: AssetInfo): void;
 }>();
 
 const PNG_1PX =
@@ -45,7 +47,7 @@ watch(
     if (!asset) return;
     imageInfo.value = '';
     if (asset.data === undefined) {
-      props.loadAsset(asset);
+      emits('loadImage', asset);
     }
   },
   { immediate: true },

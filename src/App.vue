@@ -1,13 +1,13 @@
 <template>
   <el-container>
-    <el-header>Header</el-header>
+    <el-header></el-header>
     <el-container :style="{ minHeight: 0 }">
       <LazySplitpanes local-storage-key="asset-list-width" :default-left-width="60">
         <template #left>
-          <AssetList />
+          <AssetList ref="listRef" />
         </template>
         <template #right>
-          <AssetPreview />
+          <AssetPreview @goto-asset="pathId => listRef?.gotoAsset(pathId)" />
         </template>
       </LazySplitpanes>
     </el-container>
@@ -18,4 +18,6 @@
 import LazySplitpanes from './components/LazySplitpanes.vue';
 import AssetList from './views/AssetList.vue';
 import AssetPreview from './views/AssetPreview.vue';
+
+const listRef = ref<InstanceType<typeof AssetList>>();
 </script>

@@ -2,6 +2,7 @@ import { resolve } from 'node:path';
 import { URL, fileURLToPath } from 'node:url';
 import Vue from '@vitejs/plugin-vue';
 import { VxeResolver } from '@vxecli/import-unplugin-vue-components';
+import AutoImport from 'unplugin-auto-import/vite';
 import IconsResolver from 'unplugin-icons/resolver';
 import Icons from 'unplugin-icons/vite';
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers';
@@ -16,11 +17,23 @@ export default defineConfig({
   plugins: [
     comlink(),
     Vue(),
+    AutoImport({
+      imports: ['vue'],
+      dirs: [],
+      resolvers: [ElementPlusResolver({ importStyle: 'sass' })],
+      vueTemplate: true,
+      dts: resolve(pathSrc, 'auto-imports.d.ts'),
+      eslintrc: {
+        enabled: false,
+        filepath: resolve(__dirname, 'eslint.config.autoImport.json'),
+        globalsPropValue: 'readonly',
+      },
+    }),
     Components({
       dirs: [],
       resolvers: [
-        IconsResolver({ enabledCollections: ['ep'] }),
-        ElementPlusResolver(),
+        IconsResolver({ enabledCollections: ['ep'], alias: { el: 'ep' } }),
+        ElementPlusResolver({ importStyle: 'sass' }),
         VxeResolver({ libraryName: 'vxe-table', importStyle: true }),
       ],
       dts: resolve(pathSrc, 'components.d.ts'),

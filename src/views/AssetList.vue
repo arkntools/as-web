@@ -1,12 +1,14 @@
 <template>
   <vxe-table
-    id="asset-list-table"
     ref="tableRef"
+    id="asset-list-table"
+    class="asset-list-table"
     :data="store.assetInfos"
     :border="true"
     size="mini"
     height="100%"
     header-cell-class-name="cursor-pointer"
+    :row-class-name="({ row }) => (row.key === highlightRowKey ? 'highlight' : null)"
     :row-config="{
       useKey: true,
       keyField: 'key',
@@ -27,18 +29,18 @@
   >
     <vxe-column field="name" title="Name" fixed="left" :min-width="120" sortable></vxe-column>
     <vxe-column field="container" title="Container" :min-width="60" sortable></vxe-column>
-    <vxe-column field="type" title="Type" :width="90" sortable></vxe-column>
+    <vxe-column field="type" title="Type" :width="90" sortable :filters="typeFilterOptions"></vxe-column>
     <vxe-column field="pathId" title="PathID" :min-width="60"></vxe-column>
     <vxe-column field="size" title="Size" align="right" header-align="left" :width="80" sortable></vxe-column>
   </vxe-table>
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue';
 import type { VxeTableEvents, VxeTableInstance, VxeTablePropTypes } from 'vxe-table';
 import ab from '@/assets/arkn.ab?url';
 import { useAssetManager } from '@/store/assetManager';
 import type { AssetInfo } from '@/workers/assetManager';
+import { sleep } from '@/utils/common';
 
 const getAbFile = async () => {
   const buffer = await fetch(ab).then(r => r.arrayBuffer());
@@ -65,6 +67,10 @@ const switchColumnSort = (field: string) => {
     $table.clearSort(field);
   }
 };
+
+const typeFilterOptions = computed(() =>
+  [...new Set(store.assetInfos.map(({ type }) => type)).values()].sort().map(value => ({ label: value, value })),
+);
 
 const menuConfig: VxeTablePropTypes.MenuConfig<AssetInfo> = reactive({
   header: {
@@ -159,7 +165,57 @@ const handleCurrentChange: VxeTableEvents.CurrentChange<AssetInfo> = ({ row }) =
   store.setCurAssetInfo(row);
 };
 
-const handleHeaderCellClick: VxeTableEvents.HeaderCellClick<AssetInfo> = ({ column }) => {
+const handleHeaderCellClick: VxeTableEvents.HeaderCellClick<AssetInfo> = ({ column, $event: { target } }) => {
+  if ((target as HTMLElement)?.tagName === 'I') return;
   switchColumnSort(column.field);
 };
+
+const highlightRowKey = ref('');
+let highlightTimer: NodeJS.Timeout | null = null;
+
+const gotoAsset = async (pathId: bigint) => {
+  const $table = tableRef.value;
+  if (!$table) return;
+
+  const info = store.assetInfos.find(i => i.pathId === pathId);
+  if (!info) return;
+
+  if ($table.isActiveFilterByColumn(null)) await $table.clearFilter();
+  $table.scrollToRow(info);
+
+  if (highlightTimer) clearTimeout(highlightTimer);
+  if (highlightRowKey.value === info.key) {
+    highlightRowKey.value = '';
+    await sleep();
+  }
+  highlightRowKey.value = info.key;
+  highlightTimer = setTimeout(() => {
+    highlightRowKey.value = '';
+    highlightTimer = null;
+  }, 1.5e3);
+};
+
+defineExpose({ gotoAsset });
 </script>
+
+<style lang="scss" scoped>
+.asset-list-table {
+  :deep(.highlight) {
+    animation: highlight 1.5s;
+
+    @keyframes highlight {
+      0%,
+      33%,
+      66%,
+      100% {
+        background-color: transparent;
+      }
+      16%,
+      49%,
+      82% {
+        background-color: #ffd700;
+      }
+    }
+  }
+}
+</style>

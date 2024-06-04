@@ -1,5 +1,6 @@
 import antfu from '@antfu/eslint-config';
 import { FlatCompat } from '@eslint/eslintrc';
+import autoImport from './eslint.config.autoImport.json';
 
 const compat = new FlatCompat();
 
@@ -51,4 +52,5 @@ export default antfu(
       ],
     },
   },
+  autoImport,
 );

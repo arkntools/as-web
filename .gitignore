@@ -1,3 +1,6 @@
+# Dev
+/src/assets/*.ab
+
 # Logs
 logs
 *.log

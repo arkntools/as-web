@@ -16,9 +16,21 @@
   >
     <vxe-column field="name" tree-node>
       <template #default="{ row }">
-        <span class="key">{{ row.name }}</span
-        ><span class="colon">: </span><span class="value" :class="row.type">{{ row.valueText }}</span>
-        <el-icon v-if="row.isPPtr"><i-ep-search /></el-icon>
+        <div class="dump">
+          <span class="key" :class="{ ellipsis: row.isRoot }">{{ row.name }}</span>
+          <span class="colon">:&nbsp;</span>
+          <span class="value" :class="{ [row.type]: true, ellipsis: !row.isRoot }">{{ row.valueText }}</span>
+          <el-icon
+            v-if="row.isPPtr || row.isRoot"
+            class="pptr-goto"
+            title="Goto asset"
+            color="#808080"
+            :size="14"
+            @click.capture.stop="() => emits('gotoAsset', row.isRoot ? asset.pathId : row.value.pathId)"
+          >
+            <i-el-promotion />
+          </el-icon>
+        </div>
       </template>
     </vxe-column>
   </vxe-table>
@@ -26,7 +38,6 @@
 
 <script setup lang="ts">
 import { uid } from 'uid';
-import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import type { VxeTableEvents, VxeTableInstance } from 'vxe-table';
 import type { AssetInfo } from '@/workers/assetManager';
 
@@ -37,11 +48,16 @@ interface DumpRow {
   value: any;
   type: string;
   valueText: string;
-  isPPtr?: boolean;
+  isPPtr: boolean;
+  isRoot: boolean;
 }
 
 const props = defineProps<{
   asset: AssetInfo;
+}>();
+
+const emits = defineEmits<{
+  (e: 'gotoAsset', bigint: bigint): void;
 }>();
 
 const tableRef = ref<VxeTableInstance<DumpRow>>();
@@ -53,12 +69,14 @@ const getDumpValueText = (className: string | undefined, type: string, value: an
       return `Array(${value.length})`;
     case 'object':
       return 'Object';
+    case 'string':
+      return JSON.stringify(value);
   }
   return String(value);
 };
 
 const dumpToRows = (rows: DumpRow[], obj: any, name: string, parentId?: string) => {
-  if (obj === undefined) return rows;
+  if (obj === undefined || name === '__class') return rows;
 
   const id = uid();
   const type = Array.isArray(obj) ? 'array' : typeof obj;
@@ -71,7 +89,8 @@ const dumpToRows = (rows: DumpRow[], obj: any, name: string, parentId?: string) 
     value: obj,
     type,
     valueText: getDumpValueText(className, type, obj),
-    isPPtr: className?.startsWith('PPtr'),
+    isPPtr: Boolean(className?.startsWith('PPtr') && obj?.pathId),
+    isRoot: !rows.length,
   });
 
   switch (type) {
@@ -122,26 +141,43 @@ const handleCellClick: VxeTableEvents.CellClick<DumpRow> = ({ row }) => {
   }
 }
 
-.key {
-  color: #881391;
-}
-.boolean {
-  color: #1c00cf;
-}
-.null,
-.undefined {
-  color: #808080;
-}
-.bigint,
-.number {
-  color: rgb(28, 0, 207);
-}
-.string {
-  color: rgb(196, 26, 22);
-}
-.colon,
-.object,
-.array {
-  color: #000;
+.dump {
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+
+  .pptr-goto {
+    margin-left: 4px;
+    padding: 4px;
+    cursor: pointer;
+  }
+
+  .ellipsis {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .key {
+    color: #881391;
+  }
+  .boolean {
+    color: #1c00cf;
+  }
+  .null,
+  .undefined {
+    color: #808080;
+  }
+  .bigint,
+  .number {
+    color: #1c00cf;
+  }
+  .string {
+    color: #c41a16;
+  }
+  .colon,
+  .object,
+  .array {
+    color: #000;
+  }
 }
 </style>
