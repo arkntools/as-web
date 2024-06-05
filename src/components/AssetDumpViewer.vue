@@ -76,22 +76,24 @@ const getDumpValueText = (className: string | undefined, type: string, value: an
 };
 
 const dumpToRows = (rows: DumpRow[], obj: any, name: string, parentId?: string) => {
-  if (obj === undefined || name === '__class') return rows;
+  if (obj === undefined || name === '__class') return;
 
   const id = uid();
   const type = Array.isArray(obj) ? 'array' : typeof obj;
   const className: string | undefined = obj?.__class;
 
-  rows.push({
-    id,
-    parentId,
-    name,
-    value: obj,
-    type,
-    valueText: getDumpValueText(className, type, obj),
-    isPPtr: Boolean(className?.startsWith('PPtr') && obj?.pathId),
-    isRoot: !rows.length,
-  });
+  rows.push(
+    markRaw({
+      id,
+      parentId,
+      name,
+      value: obj,
+      type,
+      valueText: getDumpValueText(className, type, obj),
+      isPPtr: Boolean(className?.startsWith('PPtr') && obj?.pathId),
+      isRoot: !rows.length,
+    }),
+  );
 
   switch (type) {
     case 'array':

@@ -26,6 +26,9 @@ export const useAssetManager = defineStore('assetManager', () => {
     isLoading.value = true;
     try {
       const { errors, infos } = await (await manager).loadFiles(files, options, onProgress);
+      infos.forEach(({ dump }) => {
+        markRaw(dump);
+      });
       assetInfos.value = infos;
       fileLoadingErrors.value = errors;
     } catch (error) {
