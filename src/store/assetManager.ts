@@ -1,5 +1,6 @@
 import type { BundleLoadOptions } from '@arkntools/unity-js';
 import { proxy } from 'comlink';
+import { saveAs } from 'file-saver';
 import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
 import type { AssetInfo, FileLoadingError, FileLoadingProgress } from '@/workers/assetManager';
@@ -53,6 +54,19 @@ export const useAssetManager = defineStore('assetManager', () => {
     curAssetInfo.value = info;
   };
 
+  const exportAsset = async ({ name, fileId, pathId }: Pick<AssetInfo, 'name' | 'fileId' | 'pathId'>) => {
+    const file = await (await manager).exportAsset(fileId, pathId);
+    if (!file) {
+      ElMessage({
+        message: `Export ${name} failed`,
+        type: 'error',
+        grouping: true,
+      });
+      return;
+    }
+    saveAs(new Blob([file.data], { type: file.type }), file.name);
+  };
+
   return {
     assetInfos,
     assetInfoMap,
@@ -64,5 +78,6 @@ export const useAssetManager = defineStore('assetManager', () => {
     clearFiles,
     loadImage,
     setCurAssetInfo,
+    exportAsset,
   };
 });

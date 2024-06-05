@@ -3,6 +3,7 @@
     ref="tableRef"
     class="asset-dump-table"
     cell-class-name="asset-dump-table__cell"
+    :row-class-name="({ rowIndex }) => ({ 'is-root': rowIndex === 0 })"
     border="none"
     size="mini"
     height="100%"
@@ -11,22 +12,24 @@
     :column-config="{ resizable: true }"
     :row-config="{ useKey: true, keyField: 'id', isHover: true }"
     :tree-config="{ transform: true, rowField: 'id', parentField: 'parentId' }"
+    :menu-config="menuConfig"
     :scroll-y="{ enabled: true }"
     @cell-click="handleCellClick"
+    @menu-click="handleMenu"
   >
     <vxe-column field="name" tree-node>
-      <template #default="{ row }">
+      <template #default="{ row, rowIndex }">
         <div class="dump">
-          <span class="key" :class="{ ellipsis: row.isRoot }">{{ row.name }}</span>
+          <span class="key" :class="{ ellipsis: rowIndex === 0 }">{{ row.name }}</span>
           <span class="colon">:&nbsp;</span>
-          <span class="value" :class="{ [row.type]: true, ellipsis: !row.isRoot }">{{ row.valueText }}</span>
+          <span class="value" :class="{ [row.type]: true, ellipsis: rowIndex !== 0 }">{{ row.valueText }}</span>
           <el-icon
-            v-if="row.isPPtr || row.isRoot"
+            v-if="row.isPPtr || rowIndex === 0"
             class="pptr-goto"
             title="Goto asset"
             color="#808080"
             :size="14"
-            @click.capture.stop="() => emits('gotoAsset', row.isRoot ? asset.pathId : row.value.pathId)"
+            @click.capture.stop="() => emits('gotoAsset', rowIndex === 0 ? asset.pathId : BigInt(row.value.pathId))"
           >
             <i-el-promotion />
           </el-icon>
@@ -38,7 +41,8 @@
 
 <script setup lang="ts">
 import { uid } from 'uid';
-import type { VxeTableEvents, VxeTableInstance } from 'vxe-table';
+import type { VxeTableEvents, VxeTableInstance, VxeTablePropTypes } from 'vxe-table';
+import { hasSelection, mapValues, omit } from '@/utils/common';
 import type { AssetInfo } from '@/workers/assetManager';
 
 interface DumpRow {
@@ -46,10 +50,9 @@ interface DumpRow {
   parentId?: string;
   name: string;
   value: any;
-  type: string;
+  type: 'string' | 'number' | 'bigint' | 'boolean' | 'symbol' | 'undefined' | 'object' | 'function' | 'array';
   valueText: string;
   isPPtr: boolean;
-  isRoot: boolean;
 }
 
 const props = defineProps<{
@@ -75,38 +78,37 @@ const getDumpValueText = (className: string | undefined, type: string, value: an
   return String(value);
 };
 
-const dumpToRows = (rows: DumpRow[], obj: any, name: string, parentId?: string) => {
-  if (obj === undefined || name === '__class') return;
+const dumpToRows = (rows: DumpRow[], value: any, name: string, parentId?: string): any => {
+  if (value === undefined) return;
 
   const id = uid();
-  const type = Array.isArray(obj) ? 'array' : typeof obj;
-  const className: string | undefined = obj?.__class;
+  const type = Array.isArray(value) ? 'array' : typeof value;
+  const className: string | undefined = value?.__class;
 
-  rows.push(
-    markRaw({
-      id,
-      parentId,
-      name,
-      value: obj,
-      type,
-      valueText: getDumpValueText(className, type, obj),
-      isPPtr: Boolean(className?.startsWith('PPtr') && obj?.pathId),
-      isRoot: !rows.length,
-    }),
-  );
+  const row: DumpRow = markRaw({
+    id,
+    parentId,
+    name,
+    value,
+    type,
+    valueText: getDumpValueText(className, type, value),
+    isPPtr: Boolean(className?.startsWith('PPtr') && value?.pathId),
+  });
+  rows.push(row);
 
   switch (type) {
     case 'array':
-      (obj as any[]).forEach((item, i) => {
-        dumpToRows(rows, item, String(i), id);
-      });
+      row.value = (value as any[]).map((item, i) => dumpToRows(rows, item, String(i), id));
       break;
     case 'object':
-      Object.entries(obj).forEach(([key, value]) => {
-        dumpToRows(rows, value, key, id);
-      });
+      row.value = mapValues(className ? omit(value, '__class') : value, (v, k) => [k, dumpToRows(rows, v, k, id)]);
+      break;
+    case 'bigint':
+      row.value = String(value);
       break;
   }
+
+  return row.value;
 };
 
 const dumpRows = computed(() => {
@@ -128,8 +130,55 @@ onMounted(() => {
   );
 });
 
-const handleCellClick: VxeTableEvents.CellClick<DumpRow> = ({ row }) => {
-  tableRef.value!.toggleTreeExpand(row);
+const handleCellClick: VxeTableEvents.CellClick<DumpRow> = ({ $table, row }) => {
+  if (hasSelection()) return;
+  $table.toggleTreeExpand(row);
+};
+
+const menuConfig: VxeTablePropTypes.MenuConfig<DumpRow> = reactive({
+  body: {
+    options: [
+      [
+        { code: 'copy', name: 'Copy value', prefixIcon: 'vxe-icon-copy' },
+        { code: 'copyJson', name: 'Copy as JSON literal', prefixIcon: 'vxe-icon-copy', visible: false },
+        { code: 'copySelection', name: 'Copy selection', prefixIcon: 'vxe-icon-copy', visible: false },
+      ],
+      [
+        { code: 'expandAll', name: 'Expand all', prefixIcon: 'vxe-icon-menu' },
+        { code: 'collapseAll', name: 'Collapse all', prefixIcon: 'vxe-icon-minus' },
+      ],
+    ],
+  },
+  visibleMethod: ({ options, row }) => {
+    if (!row) return false;
+    const copy = options[0];
+    copy[0].name = `Copy ${row.type}`;
+    copy[1].visible = row.type === 'string';
+    copy[2].visible = hasSelection();
+    return true;
+  },
+});
+
+const handleMenu: VxeTableEvents.MenuClick<DumpRow> = async ({ $table, menu, row }) => {
+  switch (menu.code) {
+    case 'copy':
+      await navigator.clipboard.writeText(
+        typeof row.value === 'object' ? JSON.stringify(row.value, undefined, 2) : String(row.value),
+      );
+      break;
+    case 'copyJson':
+      await navigator.clipboard.writeText(row.valueText);
+      break;
+    case 'copySelection':
+      document.execCommand('copy');
+      break;
+    case 'expandAll':
+      await $table.setAllTreeExpand(true);
+      break;
+    case 'collapseAll':
+      await $table.clearTreeExpand();
+      await $table.setTreeExpand(dumpRows.value[0], true);
+  }
 };
 </script>
 

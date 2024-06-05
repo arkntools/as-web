@@ -13,6 +13,13 @@ body {
   --el-border-color: rgb(232, 234, 236);
 }
 
+.cell-overflow-visible {
+  overflow: visible !important;
+  > .vxe-cell {
+    overflow: visible !important;
+  }
+}
+
 .splitpanes.default-theme {
   .splitpanes__pane {
     background-color: transparent;

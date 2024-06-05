@@ -18,6 +18,7 @@
     "@vueuse/core": "^10.10.0",
     "comlink": "^4.4.1",
     "element-plus": "^2.7.4",
+    "file-saver": "^2.0.5",
     "js-md5": "^0.8.3",
     "pinia": "^2.1.7",
     "splitpanes": "^3.1.5",
@@ -28,6 +29,7 @@
   "devDependencies": {
     "@antfu/eslint-config": "^2.20.0",
     "@tsconfig/node20": "^20.1.4",
+    "@types/file-saver": "^2.0.7",
     "@types/js-md5": "^0.7.2",
     "@types/node": "^20.14.0",
     "@types/splitpanes": "^2.2.6",

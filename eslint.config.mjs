@@ -1,6 +1,6 @@
 import antfu from '@antfu/eslint-config';
 import { FlatCompat } from '@eslint/eslintrc';
-import autoImport from './eslint.config.autoImport.json';
+import autoImport from './eslint.config.autoImport.json' assert { type: 'json' };
 
 const compat = new FlatCompat();
 
@@ -8,6 +8,7 @@ export default antfu(
   { vue: true },
   ...compat.config({
     extends: ['@vue/eslint-config-prettier'],
+    ...autoImport,
   }),
   {
     rules: {
@@ -52,5 +53,4 @@ export default antfu(
       ],
     },
   },
-  autoImport,
 );

@@ -1,6 +1,6 @@
 import { AssetType, loadAssetBundle } from '@arkntools/unity-js';
 import type { AssetObject, Bundle, BundleLoadOptions } from '@arkntools/unity-js';
-import { expose } from 'comlink';
+import { transfer } from 'comlink';
 import { md5 as calcMd5 } from 'js-md5';
 import { toTrackedPromise } from '@/utils/trackedPromise';
 import type { TrackedPromise } from '@/utils/trackedPromise';
@@ -69,6 +69,34 @@ export class AssetManager {
 
   async getImageUrl(fileId: string, pathId: bigint) {
     return (await this.loadImage(fileId, pathId))?.url;
+  }
+
+  async exportAsset(fileId: string, pathId: bigint) {
+    const obj = this.getAssetObj(fileId, pathId);
+    if (!obj) return;
+    const fileName = obj.name.replace(/[/\\:*?"<>|]/g, '');
+    switch (obj.type) {
+      case AssetType.TextAsset:
+        return {
+          name: `${fileName}.txt`,
+          type: 'text/plain',
+          data: obj.data,
+        };
+      case AssetType.Sprite:
+      case AssetType.Texture2D: {
+        const buffer = await (await this.loadImage(fileId, pathId))?.blob.arrayBuffer();
+        if (buffer) {
+          return transfer(
+            {
+              name: `${fileName}.png`,
+              type: 'image/png',
+              data: buffer,
+            },
+            [buffer],
+          );
+        }
+      }
+    }
   }
 
   private getAssetObj(fileId: string, pathId: bigint) {
