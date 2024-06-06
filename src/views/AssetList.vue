@@ -2,8 +2,8 @@
   <div class="asset-list-table-wrapper">
     <div class="asset-list-table-main">
       <vxe-table
-        ref="tableRef"
         id="asset-list-table"
+        ref="tableRef"
         class="asset-list-table"
         :data="store.assetInfos"
         :border="true"
@@ -42,8 +42,8 @@
         @checkbox-all="updateMultiSelectNum"
       >
         <vxe-column
-          type="checkbox"
           v-if="isMultiSelect"
+          type="checkbox"
           :width="38"
           :resizable="false"
           fixed="left"
@@ -70,8 +70,8 @@
 import type { VxeTableEvents, VxeTableInstance, VxeTablePropTypes } from 'vxe-table';
 import ab from '@/assets/arkn.ab?url';
 import { useAssetManager } from '@/store/assetManager';
-import type { AssetInfo } from '@/workers/assetManager';
 import { sleep } from '@/utils/common';
+import type { AssetInfo } from '@/workers/assetManager';
 
 const getAbFile = async () => {
   const buffer = await fetch(ab).then(r => r.arrayBuffer());

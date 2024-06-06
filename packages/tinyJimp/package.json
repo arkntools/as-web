@@ -1,0 +1,6 @@
+{
+  "main": "index.js",
+  "name": "tiny-jimp",
+  "types": "index.d.ts",
+  "version": "1.0.0"
+}

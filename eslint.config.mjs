@@ -18,6 +18,7 @@ export default antfu(
       'style/brace-style': ['warn', '1tbs'],
       'style/indent': 'off',
       'style/operator-linebreak': 'off',
+      'style/quote-props': 'off',
       'antfu/if-newline': 'off',
       'antfu/top-level-function': 'off',
       'no-console': 'off',
