@@ -3,7 +3,8 @@ import { proxy } from 'comlink';
 import { saveAs } from 'file-saver';
 import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
-import type { AssetInfo, FileLoadingError, FileLoadingProgress } from '@/workers/assetManager';
+import { getDateString } from '@/utils/date';
+import type { AssetInfo, ExportAssetsOnProgress, FileLoadingError, FileLoadingProgress } from '@/workers/assetManager';
 
 const worker = new ComlinkWorker<typeof import('@/workers/assetManager')>(
   new URL('../workers/assetManager.js', import.meta.url),
@@ -67,6 +68,48 @@ export const useAssetManager = defineStore('assetManager', () => {
     saveAs(new Blob([file.data], { type: file.type }), file.name);
   };
 
+  const isBatchExporting = ref(false);
+  const batchExportProgress = ref(0);
+  const batchExportProgressType = ref('');
+  const batchExportDescription = ref('');
+  const isBatchExportPreparing = computed(() => batchExportProgressType.value === 'prepare');
+
+  const batchExportOnProgress = proxy<ExportAssetsOnProgress>(({ type, percent, name }) => {
+    batchExportProgress.value = percent;
+    batchExportProgressType.value = type;
+    switch (type) {
+      case 'asset':
+        batchExportDescription.value = `Exporting ${name}`;
+        break;
+      case 'zip':
+        batchExportDescription.value = `Packing ${name}`;
+        break;
+    }
+  });
+
+  const batchExportAsset = async (infos: Array<Pick<AssetInfo, 'fileId' | 'pathId'>>) => {
+    if (isBatchExporting.value) return;
+    isBatchExporting.value = true;
+    batchExportProgress.value = 0;
+    batchExportProgressType.value = 'prepare';
+    batchExportDescription.value = 'Preparing';
+    try {
+      const zip = await (
+        await manager
+      ).exportAssets(
+        infos.map(({ fileId, pathId }) => ({ fileId, pathId })),
+        batchExportOnProgress,
+      );
+      batchExportProgress.value = 100;
+      batchExportDescription.value = '';
+      saveAs(new Blob([zip], { type: 'application/zip' }), `export-${getDateString()}.zip`);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      isBatchExporting.value = false;
+    }
+  };
+
   return {
     assetInfos,
     assetInfoMap,
@@ -74,10 +117,16 @@ export const useAssetManager = defineStore('assetManager', () => {
     fileLoadingErrors,
     loadingProgress,
     curAssetInfo,
+    isBatchExporting,
+    batchExportProgress,
+    batchExportProgressType,
+    batchExportDescription,
+    isBatchExportPreparing,
     loadFiles,
     clearFiles,
     loadImage,
     setCurAssetInfo,
     exportAsset,
+    batchExportAsset,
   };
 });

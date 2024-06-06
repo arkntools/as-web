@@ -39,6 +39,8 @@ export interface FileLoadingProgress {
   assetNum?: number;
 }
 
+export type ExportAssetsOnProgress = (param: { type: 'asset' | 'zip'; percent: number; name: string }) => any;
+
 type ZipModule = typeof import('./zip');
 
 const showAssetType = new Set([AssetType.TextAsset, AssetType.Sprite, AssetType.Texture2D]);
@@ -123,45 +125,56 @@ export class AssetManager {
     }
   }
 
-  async exportAssets(
-    params: Array<{ fileId: string; pathId: bigint }>,
-    onProgress: (param: { type: 'asset' | 'zip'; percent: number; name: string }) => any,
-  ) {
+  async exportAssets(params: Array<{ fileId: string; pathId: bigint }>, onProgress: ExportAssetsOnProgress) {
     const zip = await new this.zipWorker.Zip();
-    const objs = params.map(({ fileId, pathId }) => this.getAssetObj(fileId, pathId));
-    const textObjs = objs.filter(isTextAssetObj);
-    const imgBitmaps = objs.flatMap(obj => {
-      if (isImageAssetObj(obj)) {
-        const bitmap = obj.getImageBitmap();
-        if (bitmap) {
-          return [{ name: obj.name, bitmap }];
+    const objs = params.map(({ fileId, pathId }) => ({ fileId, obj: this.getAssetObj(fileId, pathId) }));
+    const textObjs = objs.filter((obj): obj is { fileId: string; obj: TextAsset } => isTextAssetObj(obj.obj));
+    const imgData: Array<{ name: string; blob: Blob }> = [];
+    const imgBitmaps: Array<{ name: string; bitmap: ImgBitMap }> = [];
+    for (const { fileId, obj } of objs) {
+      if (!isImageAssetObj(obj)) continue;
+      const key = this.getAssetKey(fileId, obj.pathId);
+      const image = this.imageMap.get(key);
+      if (image?.isFulfilled()) {
+        const blob = (await image)?.blob;
+        if (blob) {
+          imgData.push({ name: obj.name, blob });
+          continue;
         }
       }
-      return [];
-    });
-    const total = imgBitmaps.length + (textObjs.length ? 1 : 0);
+      const bitmap = obj.getImageBitmap();
+      if (bitmap) {
+        imgBitmaps.push({ name: obj.name, bitmap });
+      }
+    }
+    const total = imgData.length + imgBitmaps.length + (textObjs.length ? 1 : 0);
     let complete = 0;
     const imageConvertPromise = imgBitmaps.length
       ? this.imageConverter.addTasks(imgBitmaps, ({ name, data }) => {
           zip.add(transfer({ name: `${name}.png`, data }, [data]));
-          onProgress({ type: 'asset', percent: ++complete / total, name });
+          onProgress({ type: 'asset', percent: (++complete / total) * 100, name });
         })
       : null;
+    if (imgData.length) {
+      await Promise.allSettled(
+        imgData.map(async ({ name, blob }) => {
+          zip.add({ name: `${name}.png`, data: await blob.arrayBuffer() });
+        }),
+      );
+      complete += imgData.length;
+      onProgress({ type: 'asset', percent: (complete / total) * 100, name: `${imgData.length} cached images` });
+    }
     if (textObjs.length) {
-      textObjs.forEach(obj => {
+      textObjs.forEach(({ obj }) => {
         zip.add({ name: `${obj.name}.txt`, data: obj.data });
       });
-      onProgress({ type: 'asset', percent: ++complete / total, name: `${textObjs.length} TextAsset` });
+      onProgress({ type: 'asset', percent: (++complete / total) * 100, name: `${textObjs.length} TextAsset` });
     }
     await imageConvertPromise;
-    let curZippingFile = '';
     const buffer = await zip.generate(
       undefined,
       proxy<OnUpdateCallback>(({ percent, currentFile }) => {
-        if (currentFile && currentFile !== curZippingFile) {
-          curZippingFile = currentFile;
-          onProgress({ type: 'zip', percent, name: currentFile });
-        }
+        onProgress({ type: 'zip', percent, name: currentFile || '' });
       }),
     );
     zip[releaseProxy]();

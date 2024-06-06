@@ -29,7 +29,20 @@ export class Zip {
   }
 
   async generate(options?: JSZipGeneratorOptions, onUpdate?: OnUpdateCallback): Promise<ArrayBuffer> {
-    const data = await this.zip.generateAsync({ ...options, type: 'arraybuffer' }, onUpdate);
+    let lastUpdate = 0;
+    const data = await this.zip.generateAsync(
+      { ...options, type: 'arraybuffer' },
+      onUpdate
+        ? params => {
+            if (params.percent < 100) {
+              const now = Date.now();
+              if (now - lastUpdate < 50) return;
+              lastUpdate = now;
+            }
+            onUpdate(params);
+          }
+        : undefined,
+    );
     return transfer(data, [data]);
   }
 }

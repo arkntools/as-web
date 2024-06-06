@@ -47,7 +47,7 @@ class ImageConverterThread {
     if (this.isWorking || !this.taskList.length) return;
     this.isWorking = true;
     while (true) {
-      const task = this.taskList.shift();
+      const task = this.taskList.pop();
       if (!task) break;
       try {
         const data = await this.worker.toPNG(transfer(task.bitmap, [task.bitmap.data]));
@@ -87,6 +87,7 @@ export class ImageConverterPool {
     });
     const callbackPromises: any[] = [];
     const handler = async (id: string, output?: Output) => {
+      if (!ids.has(id)) return;
       ids.delete(id);
       if (output) callbackPromises.push(callback(output));
       if (ids.size) return;
@@ -100,7 +101,7 @@ export class ImageConverterPool {
   }
 
   private start(tasks: Task[]) {
-    this.taskList.push(...tasks);
+    this.taskList.push(...tasks.reverse());
     this.pool.forEach(thread => {
       thread.run();
     });

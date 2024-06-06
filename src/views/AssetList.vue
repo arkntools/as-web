@@ -57,11 +57,27 @@
         <vxe-column field="size" title="Size" align="right" header-align="left" :width="80" sortable></vxe-column>
       </vxe-table>
     </div>
-    <div v-if="isMultiSelect" class="asset-list-table-footer">
-      <div>{{ multiSelectNum }} asset{{ multiSelectNum > 1 ? 's' : '' }} selected.</div>
-      <div class="actions">
+    <div v-if="isMultiSelect" class="asset-list-table-footer wrap">
+      <div class="footer-block desc">{{ multiSelectNum }} asset{{ multiSelectNum > 1 ? 's' : '' }} selected.</div>
+      <div class="footer-block actions">
+        <el-button type="primary" size="small" :disabled="store.isBatchExporting" @click="handleBatchExportSelected"
+          >Export selected</el-button
+        >
         <el-button type="primary" size="small" @click="handleCancelMultiSelect">Cancel</el-button>
       </div>
+    </div>
+    <div v-if="store.isBatchExporting" class="asset-list-table-footer">
+      <el-progress
+        :key="store.batchExportProgressType"
+        class="progress-bar"
+        :indeterminate="store.isBatchExportPreparing"
+        :text-inside="true"
+        :stroke-width="20"
+        :percentage="store.isBatchExportPreparing ? 100 : store.batchExportProgress"
+        :format="pct => (store.isBatchExportPreparing ? '' : `${pct.toFixed(2)}%`)"
+        :duration="2"
+      />
+      <div class="progress-desc">{{ store.batchExportDescription }}</div>
     </div>
   </div>
 </template>
@@ -233,6 +249,13 @@ const handleHeaderCellClick: VxeTableEvents.HeaderCellClick<AssetInfo> = ({ colu
   switchColumnSort(column.field);
 };
 
+const handleBatchExportSelected = () => {
+  if (!tableRef.value || store.isBatchExporting) return;
+  const selected = tableRef.value.getCheckboxRecords();
+  store.batchExportAsset(selected);
+  handleCancelMultiSelect();
+};
+
 const highlightRowKey = ref('');
 let highlightTimer: NodeJS.Timeout | null = null;
 
@@ -304,12 +327,44 @@ defineExpose({ gotoAsset });
     display: flex;
     flex-shrink: 0;
     align-items: center;
-    height: 40px;
-    padding: 0 16px;
+    padding: 8px 16px;
     background-color: var(--el-color-info-light-9);
+
+    &.wrap {
+      flex-wrap: wrap;
+    }
+
+    .footer-block {
+      display: flex;
+      flex-wrap: nowrap;
+      align-items: center;
+      line-height: 24px;
+    }
+
+    .desc {
+      white-space: nowrap;
+    }
 
     .actions {
       margin-left: auto;
+    }
+
+    .progress-bar {
+      --el-border-color-lighter: rgba(0, 0, 0, 0.15);
+      flex-shrink: 0;
+      width: 50%;
+      max-width: 400px;
+    }
+
+    .progress-desc {
+      flex-grow: 1;
+      flex-shrink: 1;
+      min-width: 0;
+      margin-left: 16px;
+      line-height: 24px;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
     }
   }
 }
