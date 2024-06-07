@@ -21,11 +21,11 @@
     "element-plus": "^2.7.4",
     "eventemitter3": "^5.0.1",
     "file-saver": "^2.0.5",
+    "jimp-png": "git@github.com:arkntools/jimp-png.git",
     "js-md5": "^0.8.3",
     "jszip": "^3.10.1",
     "pinia": "^2.1.7",
     "splitpanes": "^3.1.5",
-    "tiny-jimp": "file:./packages/tinyJimp",
     "uid": "^2.0.2",
     "vue": "^3.4.27",
     "vxe-table": "~4.6.17"
