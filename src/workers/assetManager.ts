@@ -27,6 +27,7 @@ export interface AssetInfo {
   dump: Record<string, any>;
   /** `undefined` means not loaded, `null` means error */
   data: string | null | undefined;
+  search: string;
 }
 
 export interface FileLoadingError {
@@ -233,16 +234,18 @@ export class AssetManager {
         .map(async (obj): Promise<AssetInfo> => {
           const { name, type, pathId, size } = obj;
           const key = this.getAssetKey(fileInfo.fileId, pathId);
+          const container = bundle.containerMap?.get(pathId) ?? '';
           return {
+            ...fileInfo,
             key,
             name,
-            container: bundle.containerMap?.get(pathId) ?? '',
+            container,
             type: AssetType[type] ?? '',
             pathId,
             size,
             dump: obj.dump(),
             data: await this.getAssetData(obj, key),
-            ...fileInfo,
+            search: name.toLowerCase(),
           };
         }),
     );

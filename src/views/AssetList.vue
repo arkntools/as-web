@@ -1,11 +1,15 @@
 <template>
   <div class="asset-list-table-wrapper">
-    <div class="asset-list-table-main">
+    <div class="asset-list-table-header">
+      <el-input v-model="searchInput" placeholder="Search" :prefix-icon="IElSearch" clearable />
+    </div>
+    <div class="asset-list-table-main" @dragover.capture.prevent @drop.capture.prevent="handleDropFiles">
       <vxe-table
         id="asset-list-table"
         ref="tableRef"
         class="asset-list-table"
-        :data="store.assetInfos"
+        :data="searchedAssetInfos"
+        :loading="store.isLoading"
         :border="true"
         size="mini"
         height="100%"
@@ -55,6 +59,11 @@
         <vxe-column field="type" title="Type" :width="90" sortable :filters="typeFilterOptions"></vxe-column>
         <vxe-column field="pathId" title="PathID" :min-width="60"></vxe-column>
         <vxe-column field="size" title="Size" align="right" header-align="left" :width="80" sortable></vxe-column>
+        <template #empty>
+          <el-text :style="{ fontSize: '30px', color: 'var(--el-color-info-light-3)' }"
+            >Drop files here or click "File" menu to load files</el-text
+          >
+        </template>
       </vxe-table>
     </div>
     <div v-if="isMultiSelect" class="asset-list-table-footer wrap">
@@ -83,11 +92,13 @@
 </template>
 
 <script setup lang="ts">
+import { refDebounced } from '@vueuse/core';
 import type { VxeTableEvents, VxeTableInstance, VxeTablePropTypes } from 'vxe-table';
 import ab from '@/assets/arkn.ab?url';
 import { useAssetManager } from '@/store/assetManager';
 import { sleep } from '@/utils/common';
 import type { AssetInfo } from '@/workers/assetManager';
+import IElSearch from '~icons/ep/search';
 
 const getAbFile = async () => {
   const buffer = await fetch(ab).then(r => r.arrayBuffer());
@@ -99,7 +110,32 @@ const tableRef = ref<VxeTableInstance<AssetInfo>>();
 const store = useAssetManager();
 
 onMounted(async () => {
-  await store.loadFiles([await getAbFile()]);
+  // await store.loadFiles([await getAbFile()]);
+});
+
+const handleDropFiles = (e: DragEvent) => {
+  const items = [...(e.dataTransfer?.items ?? [])];
+  if (!items) return;
+  items.flatMap(item => {
+    if (item.kind !== 'file') return [];
+    const entry = item.webkitGetAsEntry();
+    if (!entry) return [];
+    if (entry.isFile) {
+      (entry as FileSystemFileEntry).file(file => {
+        console.log('file: ', file);
+      });
+    }
+    return [];
+  });
+};
+
+const searchInput = ref('');
+const searchInputDebounced = refDebounced(searchInput, 200);
+const searchInputForComputed = computed(() => (searchInput.value ? searchInputDebounced.value : ''));
+const searchedAssetInfos = computed(() => {
+  if (!searchInputForComputed.value) return store.assetInfos;
+  const searchText = searchInputForComputed.value.toLowerCase();
+  return store.assetInfos.filter(({ search }) => search.includes(searchText));
 });
 
 const isMultiSelect = ref(false);
@@ -321,6 +357,17 @@ defineExpose({ gotoAsset });
     flex-shrink: 1;
     min-height: 0;
     overflow: visible;
+    z-index: 0;
+  }
+
+  &-header {
+    flex-shrink: 0;
+    margin-bottom: -1px;
+    z-index: 10;
+
+    :deep(.el-input__wrapper) {
+      border-radius: 0;
+    }
   }
 
   &-footer {

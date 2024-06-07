@@ -4,7 +4,7 @@ import { saveAs } from 'file-saver';
 import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
 import { getDateString } from '@/utils/date';
-import type { AssetInfo, ExportAssetsOnProgress, FileLoadingError, FileLoadingProgress } from '@/workers/assetManager';
+import type { AssetInfo, ExportAssetsOnProgress, FileLoadingProgress } from '@/workers/assetManager';
 
 const worker = new ComlinkWorker<typeof import('@/workers/assetManager')>(
   new URL('../workers/assetManager.js', import.meta.url),
@@ -14,7 +14,6 @@ const manager = new worker.AssetManager();
 export const useAssetManager = defineStore('assetManager', () => {
   const assetInfos = ref<AssetInfo[]>([]);
   const isLoading = ref(false);
-  const fileLoadingErrors = ref<FileLoadingError[]>([]);
   const loadingProgress = ref<FileLoadingProgress>({});
   const curAssetInfo = ref<AssetInfo>();
 
@@ -31,10 +30,20 @@ export const useAssetManager = defineStore('assetManager', () => {
       infos.forEach(({ dump }) => {
         markRaw(dump);
       });
-      assetInfos.value = infos;
-      fileLoadingErrors.value = errors;
+      if (infos.length) assetInfos.value = infos;
+      if (errors.length) {
+        errors.forEach(({ name, error }) => {
+          ElMessage({
+            message: `Failed to load ${name}: ${error}`,
+            type: 'error',
+          });
+        });
+      }
     } catch (error) {
-      fileLoadingErrors.value = [{ name: 'Error', error: String(error) }];
+      ElMessage({
+        message: `Failed to load: ${error}`,
+        type: 'error',
+      });
     } finally {
       isLoading.value = false;
       loadingProgress.value = {};
@@ -114,7 +123,6 @@ export const useAssetManager = defineStore('assetManager', () => {
     assetInfos,
     assetInfoMap,
     isLoading,
-    fileLoadingErrors,
     loadingProgress,
     curAssetInfo,
     isBatchExporting,

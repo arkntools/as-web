@@ -71,6 +71,7 @@ const handleResized = ([{ size }]: Array<{ size: number }>) => {
 
 .pane {
   position: relative;
+  transition: none;
 }
 
 .resize-mask {

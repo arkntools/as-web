@@ -1,6 +1,8 @@
 <template>
   <el-container>
-    <el-header></el-header>
+    <el-header height="auto" :style="{ padding: 0 }">
+      <AppHeader />
+    </el-header>
     <el-container :style="{ minHeight: 0 }">
       <LazySplitpanes local-storage-key="asset-list-width" :default-left-width="60">
         <template #left>
@@ -16,6 +18,7 @@
 
 <script setup lang="ts">
 import LazySplitpanes from './components/LazySplitpanes.vue';
+import AppHeader from './views/AppHeader.vue';
 import AssetList from './views/AssetList.vue';
 import AssetPreview from './views/AssetPreview.vue';
 
