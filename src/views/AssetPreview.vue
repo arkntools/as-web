@@ -3,7 +3,7 @@
     <el-tab-pane label="Preview" name="preview" />
     <el-tab-pane label="Dump" name="dump" />
     <div class="asset-preview-pane">
-      <KeepAlive :exclude="['AssetTextViewer']">
+      <KeepAlive :exclude="['AssetTextViewerAsync']">
         <component
           :is="PreviewComponent"
           :asset="assetManager.curAssetInfo"
@@ -20,7 +20,6 @@
 import AssetDumpViewer from '@/components/AssetDumpViewer.vue';
 import AssetImageViewer from '@/components/AssetImageViewer.vue';
 import AssetNoPreview from '@/components/AssetNoPreview.vue';
-import AssetTextViewer from '@/components/AssetTextViewer.vue';
 import { useAssetManager } from '@/store/assetManager';
 import { useSetting } from '@/store/setting';
 
@@ -36,7 +35,10 @@ const activePane = ref('preview');
 const viewerMap: Record<string, Component | undefined> = {
   Sprite: AssetImageViewer,
   Texture2D: AssetImageViewer,
-  TextAsset: AssetTextViewer,
+  TextAsset: (c => {
+    c.name = 'AssetTextViewerAsync';
+    return c;
+  })(defineAsyncComponent(() => import('@/components/AssetTextViewer.vue'))),
 };
 
 const enablePreview = computed(() => setting.data.enablePreview);

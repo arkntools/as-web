@@ -13,7 +13,7 @@ import { comlink } from 'vite-plugin-comlink';
 const pathSrc = resolve(__dirname, 'src');
 
 // https://vitejs.dev/config/
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   plugins: [
     comlink(),
     Vue(),
@@ -22,7 +22,7 @@ export default defineConfig({
       dirs: [],
       resolvers: [ElementPlusResolver({ importStyle: 'sass' })],
       vueTemplate: true,
-      dts: resolve(pathSrc, 'auto-imports.d.ts'),
+      dts: command === 'serve' ? resolve(pathSrc, 'auto-imports.d.ts') : false,
       eslintrc: {
         enabled: false,
         filepath: resolve(__dirname, 'eslint.config.autoImport.json'),
@@ -36,7 +36,7 @@ export default defineConfig({
         ElementPlusResolver({ importStyle: 'sass' }),
         VxeResolver({ libraryName: 'vxe-table', importStyle: true }),
       ],
-      dts: resolve(pathSrc, 'components.d.ts'),
+      dts: command === 'serve' ? resolve(pathSrc, 'components.d.ts') : false,
     }),
     Icons(),
   ],
@@ -48,4 +48,4 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
-});
+}));

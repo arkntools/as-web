@@ -1,7 +1,7 @@
 import { useLocalStorage } from '@vueuse/core';
+import { pick } from 'lodash-es';
 import { defineStore } from 'pinia';
 import { ExportGroupMethod } from '@/types/export';
-import { pick } from '@/utils/common';
 
 export const useSetting = defineStore('setting', () => {
   const data = useLocalStorage(

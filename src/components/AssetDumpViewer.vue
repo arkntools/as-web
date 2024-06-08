@@ -40,9 +40,10 @@
 </template>
 
 <script setup lang="ts">
+import { mapValues, omit } from 'lodash-es';
 import { uid } from 'uid';
 import type { VxeTableEvents, VxeTableInstance, VxeTablePropTypes } from 'vxe-table';
-import { hasSelection, mapValues, omit } from '@/utils/common';
+import { hasSelection } from '@/utils/common';
 import type { AssetInfo } from '@/workers/assetManager';
 
 interface DumpRow {
