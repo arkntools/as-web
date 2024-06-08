@@ -9,6 +9,7 @@ import { ElementPlusResolver } from 'unplugin-vue-components/resolvers';
 import Components from 'unplugin-vue-components/vite';
 import { defineConfig } from 'vite';
 import { comlink } from 'vite-plugin-comlink';
+import SvgLoader from 'vite-svg-loader';
 
 const pathSrc = resolve(__dirname, 'src');
 
@@ -17,6 +18,7 @@ export default defineConfig(({ command }) => ({
   plugins: [
     comlink(),
     Vue(),
+    SvgLoader(),
     AutoImport({
       imports: ['vue'],
       dirs: [],

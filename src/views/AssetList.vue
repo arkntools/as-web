@@ -177,9 +177,9 @@ const menuConfig: VxeTablePropTypes.MenuConfig<AssetInfo> = reactive({
       [{ code: 'multiselect', name: 'Multi select', prefixIcon: 'vxe-icon-square-checked' }],
     ],
   },
-  visibleMethod: ({ type, options, columns, column }) => {
+  visibleMethod: ({ type, options, columns, column, row }) => {
     if (type !== 'header') {
-      return !isMultiSelect.value;
+      return !isMultiSelect.value && !!row;
     }
     if (column?.type === 'checkbox') return false;
     const sortOption = options[1];

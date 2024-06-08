@@ -1,6 +1,10 @@
 <template>
   <div class="menu-bar">
-    <MenuBar :config="menuConfig" />
+    <MenuBar :config="menuConfig">
+      <template #right>
+        <el-button class="github-btn" :icon="IconGithub" circle text @click="gotoGithub" />
+      </template>
+    </MenuBar>
     <ExportOptionsDialog ref="exportOptionsDialogRef" />
     <UnityCNOptionsDialog ref="unityCNOptionsDialogRef" />
   </div>
@@ -8,6 +12,7 @@
 
 <script setup lang="ts">
 import { useFileDialog } from '@vueuse/core';
+import IconGithub from '@/assets/github.svg';
 import MenuBar, { type MenuBarConfig } from '@/components/MenuBar.vue';
 import { useAssetManager } from '@/store/assetManager';
 import { useSetting } from '@/store/setting';
@@ -24,6 +29,10 @@ const setting = useSetting();
 
 const exportOptionsDialogRef = ref<InstanceType<typeof ExportOptionsDialog>>();
 const unityCNOptionsDialogRef = ref<InstanceType<typeof UnityCNOptionsDialog>>();
+
+const gotoGithub = () => {
+  window.open('https://github.com/arkntools/as-web', '_blank');
+};
 
 const loadFiles = (list: FileList | null) => {
   if (!list || !list.length) return;
@@ -106,5 +115,12 @@ const menuConfig = markRaw<MenuBarConfig>([
   border: none;
   border-radius: 0;
   outline: none;
+}
+
+.github-btn {
+  --el-fill-color-light: rgba(0, 0, 0, 0.1);
+  --el-fill-color: rgba(0, 0, 0, 0.15);
+  padding: 4px;
+  font-size: 18px;
 }
 </style>

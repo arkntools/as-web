@@ -7,6 +7,9 @@
       :index="i"
       :config="markRaw(item)"
     />
+    <div class="right-area">
+      <slot name="right"></slot>
+    </div>
   </div>
 </template>
 
@@ -33,7 +36,16 @@ provide(closeMenuExceptKey, index => {
 
 <style lang="scss" scoped>
 .menu-bar {
+  display: flex;
+  position: relative;
   padding: 0 8px;
   background-color: var(--el-color-info-light-9);
+}
+
+.right-area {
+  display: flex;
+  height: 32px;
+  margin-left: auto;
+  align-items: center;
 }
 </style>
