@@ -11,6 +11,7 @@ import type {
 import { proxy, releaseProxy, transfer } from 'comlink';
 import { md5 as calcMd5 } from 'js-md5';
 import type { OnUpdateCallback } from 'jszip';
+import { ExportGroupMethod } from '@/types/export';
 import { toTrackedPromise } from '@/utils/trackedPromise';
 import type { TrackedPromise } from '@/utils/trackedPromise';
 import { ImageConverterPool } from './utils/imageConverterPool';
@@ -35,12 +36,13 @@ export interface FileLoadingError {
   error: string;
 }
 
-export interface FileLoadingProgress {
-  name?: string;
-  assetNum?: number;
-}
+export type FileLoadingOnProgress = (param: { name: string; progress: number; totalAssetNum: number }) => any;
 
-export type ExportAssetsOnProgress = (param: { type: 'asset' | 'zip'; percent: number; name: string }) => any;
+export type ExportAssetsOnProgress = (param: {
+  type: 'exportPreparing' | 'exportAsset' | 'exportZip';
+  percent: number;
+  name: string;
+}) => any;
 
 type ZipModule = typeof import('./zip');
 
@@ -48,6 +50,8 @@ const showAssetType = new Set([AssetType.TextAsset, AssetType.Sprite, AssetType.
 const isTextAssetObj = (obj?: AssetObject): obj is TextAsset => obj?.type === AssetType.TextAsset;
 const isImageAssetObj = (obj?: AssetObject): obj is Sprite | Texture2D =>
   !!obj && (obj.type === AssetType.Sprite || obj.type === AssetType.Texture2D);
+
+const getLegalFileName = (name: string) => name.replace(/[/\\:*?"<>|]/g, '');
 
 export class AssetManager {
   private bundleMap = new Map<string, Bundle>();
@@ -72,26 +76,33 @@ export class AssetManager {
     this.imageMap.clear();
   }
 
-  async loadFiles(files: File[], options?: BundleLoadOptions, onProgress?: (progress: FileLoadingProgress) => void) {
+  async loadFiles(files: File[], options: BundleLoadOptions, onProgress: FileLoadingOnProgress) {
     const errors: Array<FileLoadingError> = [];
     const infos: AssetInfo[] = [];
-    for (const file of files) {
+    let successNum = 0;
+    for (const [i, file] of files.entries()) {
       try {
-        onProgress?.({ name: file.name });
+        onProgress({
+          name: file.name,
+          progress: (i / files.length) * 100,
+          totalAssetNum: infos.length,
+        });
         const timeLabel = `[AssetManager] load ${file.name}`;
         console.time(timeLabel);
         const result = await this.loadFile(file, options);
         console.timeEnd(timeLabel);
         console.log(`[AssetManager] ${result.length} assets loaded from ${file.name}`);
-        if (result.length) infos.push(...result);
-        onProgress?.({ assetNum: infos.length });
+        if (result.length) {
+          successNum++;
+          infos.push(...result);
+        }
       } catch (error) {
         errors.push({ name: file.name, error: String(error) });
         console.error(`[AssetManager] failed to load ${file.name}`);
         console.error(error);
       }
     }
-    return { errors, infos };
+    return { errors, infos, successNum };
   }
 
   async getImageUrl(fileId: string, pathId: bigint) {
@@ -101,7 +112,7 @@ export class AssetManager {
   async exportAsset(fileId: string, pathId: bigint) {
     const obj = this.getAssetObj(fileId, pathId);
     if (!obj) return;
-    const fileName = obj.name.replace(/[/\\:*?"<>|]/g, '');
+    const fileName = getLegalFileName(obj.name);
     switch (obj.type) {
       case AssetType.TextAsset:
         return {
@@ -126,59 +137,105 @@ export class AssetManager {
     }
   }
 
-  async exportAssets(params: Array<{ fileId: string; pathId: bigint }>, onProgress: ExportAssetsOnProgress) {
+  async exportAssets(
+    params: Array<{ fileId: string; pathId: bigint; fileName: string; container: string }>,
+    { groupMethod }: { groupMethod: ExportGroupMethod },
+    onProgress: ExportAssetsOnProgress,
+  ) {
     const zip = await new this.zipWorker.Zip();
-    const objs = params.map(({ fileId, pathId }) => ({ fileId, obj: this.getAssetObj(fileId, pathId) }));
-    const textObjs = objs.filter((obj): obj is { fileId: string; obj: TextAsset } => isTextAssetObj(obj.obj));
-    const imgData: Array<{ name: string; blob: Blob }> = [];
-    const imgBitmaps: Array<{ name: string; bitmap: ImgBitMap }> = [];
-    for (const { fileId, obj } of objs) {
-      if (!isImageAssetObj(obj)) continue;
-      const key = this.getAssetKey(fileId, obj.pathId);
+    const objMap = new Map(
+      params.map(({ fileId, pathId, fileName, container }) => {
+        const key = this.getAssetKey(fileId, pathId);
+        return [key, { key, fileName, container, obj: this.getAssetObj(fileId, pathId) }];
+      }),
+    );
+    const getObjName = (key: string) => objMap.get(key)?.obj?.name ?? '';
+    const getObjPath = (key: string, ext: string) => {
+      const data = objMap.get(key);
+      if (!data?.obj) return '';
+      const { obj, fileName, container } = data;
+      const legalName = getLegalFileName(obj.name);
+      switch (groupMethod) {
+        case ExportGroupMethod.CONTAINER_PATH:
+          if (container) return container;
+        // eslint-disable-next-line no-fallthrough
+        case ExportGroupMethod.NONE:
+          return `${legalName}.${ext}`;
+        case ExportGroupMethod.TYPE_NAME:
+          return `${AssetType[obj.type]}/${legalName}.${ext}`;
+        case ExportGroupMethod.SOURCE_FILE_NAME:
+          return `${fileName}/${legalName}.${ext}`;
+      }
+    };
+
+    const objs = [...objMap.values()];
+    const textObjs = objs.filter(obj => isTextAssetObj(obj.obj));
+
+    const imgData: Array<{ key: string; blob: Blob }> = [];
+    const imgBitmaps: Array<{ key: string; bitmap: ImgBitMap }> = [];
+    let lastPrepareUpdateTs = 0;
+
+    const imgObjs = objs.filter(({ obj }) => isImageAssetObj(obj)) as Array<{
+      key: string;
+      obj: Texture2D | Sprite;
+    }>;
+    const updatePrepareProgress = (i: number, key: string) => {
+      const now = Date.now();
+      if (now - lastPrepareUpdateTs < 50) return;
+      lastPrepareUpdateTs = now;
+      onProgress({ type: 'exportPreparing', percent: (i / imgObjs.length) * 100, name: getObjName(key) });
+    };
+    for (const [i, { key, obj }] of imgObjs.entries()) {
+      updatePrepareProgress(i, obj.name);
       const image = this.imageMap.get(key);
       if (image?.isFulfilled()) {
         const blob = (await image)?.blob;
         if (blob) {
-          imgData.push({ name: obj.name, blob });
+          imgData.push({ key, blob });
           continue;
         }
       }
       const bitmap = obj.getImageBitmap();
       if (bitmap) {
-        imgBitmaps.push({ name: obj.name, bitmap });
+        imgBitmaps.push({ key, bitmap });
       }
     }
+
     const total = imgData.length + imgBitmaps.length + (textObjs.length ? 1 : 0);
     let complete = 0;
+
     const imageConvertPromise = imgBitmaps.length
-      ? this.imageConverter.addTasks(imgBitmaps, ({ name, data }) => {
-          zip.add(transfer({ name: `${name}.png`, data }, [data]));
-          onProgress({ type: 'asset', percent: (++complete / total) * 100, name });
+      ? this.imageConverter.addTasks(imgBitmaps, ({ key, data }) => {
+          zip.add(transfer({ name: getObjPath(key, 'png'), data }, [data]));
+          onProgress({ type: 'exportAsset', percent: (++complete / total) * 100, name: getObjName(key) });
         })
       : null;
     if (imgData.length) {
       await Promise.allSettled(
-        imgData.map(async ({ name, blob }) => {
-          zip.add({ name: `${name}.png`, data: await blob.arrayBuffer() });
+        imgData.map(async ({ key, blob }) => {
+          zip.add({ name: getObjPath(key, 'png'), data: await blob.arrayBuffer() });
         }),
       );
       complete += imgData.length;
-      onProgress({ type: 'asset', percent: (complete / total) * 100, name: `${imgData.length} cached images` });
+      onProgress({ type: 'exportAsset', percent: (complete / total) * 100, name: `${imgData.length} cached images` });
     }
     if (textObjs.length) {
-      textObjs.forEach(({ obj }) => {
-        zip.add({ name: `${obj.name}.txt`, data: obj.data });
+      textObjs.forEach(({ key, obj }) => {
+        zip.add({ name: getObjPath(key, 'txt'), data: (obj as TextAsset).data });
       });
-      onProgress({ type: 'asset', percent: (++complete / total) * 100, name: `${textObjs.length} TextAsset` });
+      onProgress({ type: 'exportAsset', percent: (++complete / total) * 100, name: `${textObjs.length} TextAsset` });
     }
+
     await imageConvertPromise;
+
     const buffer = await zip.generate(
       undefined,
       proxy<OnUpdateCallback>(({ percent, currentFile }) => {
-        onProgress({ type: 'zip', percent, name: currentFile || '' });
+        onProgress({ type: 'exportZip', percent, name: currentFile || '' });
       }),
     );
     zip[releaseProxy]();
+
     return transfer(buffer, [buffer]);
   }
 
@@ -214,7 +271,7 @@ export class AssetManager {
     const bitmap = obj.getImageBitmap();
     if (!bitmap) return;
     let buffer: ArrayBuffer | undefined;
-    await this.imageConverter.addTasks([{ name: '', bitmap }], ({ data }) => {
+    await this.imageConverter.addTasks([{ key: '', bitmap }], ({ data }) => {
       buffer = data;
     });
     if (buffer) return buffer;

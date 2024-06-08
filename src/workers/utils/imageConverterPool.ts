@@ -5,19 +5,19 @@ import { uid } from 'uid';
 
 interface Task {
   id: string;
-  name: string;
+  key: string;
   bitmap: ImgBitMap;
 }
 
 type ImageConverter = typeof import('../imageConverter');
 
 interface Input {
-  name: string;
+  key: string;
   bitmap: ImgBitMap;
 }
 
 interface Output {
-  name: string;
+  key: string;
   data: ArrayBuffer;
 }
 
@@ -49,9 +49,10 @@ class ImageConverterThread {
     while (true) {
       const task = this.taskList.pop();
       if (!task) break;
+      console.debug(`[ImageConverterThread] thread ${this.id} start ${task.key}`);
       try {
         const data = await this.worker.toPNG(transfer(task.bitmap, [task.bitmap.data]));
-        this.emitter.emit('done', task.id, { name: task.name, data });
+        this.emitter.emit('done', task.id, { key: task.key, data });
       } catch (error) {
         console.error(error);
         this.emitter.emit('done', task.id);

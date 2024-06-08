@@ -1,6 +1,16 @@
 <template>
-  <el-dropdown trigger="click" @command="handleCommand">
-    <el-button class="menu-btn" plain type="info">{{ config.name }}</el-button>
+  <el-dropdown
+    ref="dropdownRef"
+    popper-class="menu-dropdown"
+    trigger="click"
+    placement="bottom-start"
+    :popper-options="popoverOptions"
+    @command="handleCommand"
+    @visible-change="visible => (isOpen = visible)"
+  >
+    <el-button class="menu-btn" :class="{ active: isOpen }" plain type="info" @mouseenter="handleMouseEnter">{{
+      config.name
+    }}</el-button>
     <template #dropdown>
       <el-dropdown-menu>
         <el-dropdown-item
@@ -9,7 +19,7 @@
           :command="i"
           :disabled="item.disabled?.()"
           :divided="item.divided"
-          :icon="item.icon"
+          :icon="item.icon?.() || defaultIcon"
           >{{ item.name }}</el-dropdown-item
         >
       </el-dropdown-menu>
@@ -18,24 +28,69 @@
 </template>
 
 <script setup lang="ts">
+import type { ElDropdown, ElDropdownItem } from 'element-plus';
+import { closeMenuExceptKey, hasMenuOpenKey } from '@/types/menuProvide';
+
 export interface MenuDropdownConfig {
   name: string;
+  icon?: boolean;
   items: Array<{
     name: string;
     handler: () => any;
     disabled?: () => boolean;
     divided?: boolean;
-    icon?: any;
+    icon?: () => InstanceType<typeof ElDropdownItem>['icon'];
   }>;
 }
 
 const props = defineProps<{
+  index: number;
   config: MenuDropdownConfig;
 }>();
+
+const dropdownRef = ref<InstanceType<typeof ElDropdown>>();
+
+const hanMenuOpen = inject(hasMenuOpenKey);
+const closeMenuExcept = inject(closeMenuExceptKey);
+
+const isOpen = ref(false);
+
+const defaultIcon = computed(() => (props.config.icon ? () => undefined : undefined));
 
 const handleCommand = (i: number) => {
   props.config.items[i].handler();
 };
+
+const handleMouseEnter = () => {
+  if (hanMenuOpen?.()) {
+    closeMenuExcept?.(props.index);
+    dropdownRef.value?.handleOpen();
+  }
+};
+
+const popoverOptions = {
+  modifiers: [
+    {
+      name: 'offset',
+      options: { offset: [-1, 0] },
+    },
+    {
+      name: 'preventOverflow',
+      options: { padding: 0 },
+    },
+    {
+      name: 'computeStyles',
+      options: { gpuAcceleration: false },
+    },
+  ],
+};
+
+defineExpose({
+  isOpen: () => isOpen.value,
+  close: () => {
+    dropdownRef.value?.handleClose();
+  },
+});
 </script>
 
 <style lang="scss" scoped>
@@ -43,5 +98,23 @@ const handleCommand = (i: number) => {
   border: none;
   border-radius: 0;
   outline: none;
+
+  &.active {
+    color: var(--el-button-active-text-color);
+    background-color: var(--el-button-active-bg-color);
+  }
+}
+</style>
+
+<style lang="scss">
+.menu-dropdown {
+  border-radius: 0;
+
+  .el-popper__arrow {
+    display: none;
+  }
+  .el-icon {
+    transform: translateX(-4px);
+  }
 }
 </style>

@@ -1,7 +1,7 @@
 <template>
   <el-container>
     <el-header height="auto" :style="{ padding: 0 }">
-      <AppHeader />
+      <AppHeader @command-export="type => listRef?.doExport(type)" />
     </el-header>
     <el-container :style="{ minHeight: 0 }">
       <LazySplitpanes local-storage-key="asset-list-width" :default-left-width="60">

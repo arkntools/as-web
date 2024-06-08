@@ -17,6 +17,11 @@ export const omit = <T extends Record<string, any>, U extends keyof T>(obj: T, k
   return newObj as any;
 };
 
+export const pick = <T extends Record<string, any>, U extends keyof T>(obj: T, keys: U | U[]): Pick<T, U> => {
+  const keySet = new Set(Array.isArray(keys) ? keys : [keys]);
+  return Object.fromEntries(Object.entries(obj).filter(([k]) => keySet.has(k as U))) as any;
+};
+
 export const mapValues = <T extends Record<string, any>>(
   obj: T,
   callbackfn: <U extends Extract<keyof T, string>>(value: T[U], key: U) => T[keyof T],

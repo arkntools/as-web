@@ -38,6 +38,7 @@
         show-overflow="title"
         show-header-overflow
         @menu-click="handleMenu"
+        @header-cell-menu="handleHeaderCellMenu"
         @cell-menu="handleCellMenu"
         @cell-click="updateMultiSelectNum"
         @current-change="handleCurrentChange"
@@ -60,9 +61,9 @@
         <vxe-column field="pathId" title="PathID" :min-width="60"></vxe-column>
         <vxe-column field="size" title="Size" align="right" header-align="left" :width="80" sortable></vxe-column>
         <template #empty>
-          <el-text :style="{ fontSize: '30px', color: 'var(--el-color-info-light-3)' }"
-            >Drop files here or click "File" menu to load files</el-text
-          >
+          <el-text :style="{ fontSize: '30px', color: 'var(--el-color-info-light-3)' }">
+            {{ store.assetInfos.length ? 'No data' : 'Drop files here or click "File" menu to load files' }}
+          </el-text>
         </template>
       </vxe-table>
     </div>
@@ -75,18 +76,8 @@
         <el-button type="primary" size="small" @click="handleCancelMultiSelect">Cancel</el-button>
       </div>
     </div>
-    <div v-if="store.isBatchExporting" class="asset-list-table-footer">
-      <el-progress
-        :key="store.batchExportProgressType"
-        class="progress-bar"
-        :indeterminate="store.isBatchExportPreparing"
-        :text-inside="true"
-        :stroke-width="20"
-        :percentage="store.isBatchExportPreparing ? 100 : store.batchExportProgress"
-        :format="pct => (store.isBatchExportPreparing ? '' : `${pct.toFixed(2)}%`)"
-        :duration="2"
-      />
-      <div class="progress-desc">{{ store.batchExportDescription }}</div>
+    <div v-if="store.isLoading || store.isBatchExporting" class="asset-list-table-footer">
+      <ProgressBar />
     </div>
   </div>
 </template>
@@ -94,47 +85,36 @@
 <script setup lang="ts">
 import { refDebounced } from '@vueuse/core';
 import type { VxeTableEvents, VxeTableInstance, VxeTablePropTypes } from 'vxe-table';
-import ab from '@/assets/arkn.ab?url';
 import { useAssetManager } from '@/store/assetManager';
 import { sleep } from '@/utils/common';
+import { getFilesFromDataTransferItems } from '@/utils/file';
 import type { AssetInfo } from '@/workers/assetManager';
+import ProgressBar from './components/ProgressBar.vue';
 import IElSearch from '~icons/ep/search';
-
-const getAbFile = async () => {
-  const buffer = await fetch(ab).then(r => r.arrayBuffer());
-  return new File([buffer], 'test.ab');
-};
 
 const tableRef = ref<VxeTableInstance<AssetInfo>>();
 
 const store = useAssetManager();
 
-onMounted(async () => {
-  // await store.loadFiles([await getAbFile()]);
-});
+watch(
+  () => store.curAssetInfo,
+  info => {
+    if (!info) tableRef.value?.clearCurrentRow();
+  },
+);
 
-const handleDropFiles = (e: DragEvent) => {
+const handleDropFiles = async (e: DragEvent) => {
   const items = [...(e.dataTransfer?.items ?? [])];
-  if (!items) return;
-  items.flatMap(item => {
-    if (item.kind !== 'file') return [];
-    const entry = item.webkitGetAsEntry();
-    if (!entry) return [];
-    if (entry.isFile) {
-      (entry as FileSystemFileEntry).file(file => {
-        console.log('file: ', file);
-      });
-    }
-    return [];
-  });
+  const files = await getFilesFromDataTransferItems(items);
+  if (files.length) store.loadFiles(files);
 };
 
 const searchInput = ref('');
 const searchInputDebounced = refDebounced(searchInput, 200);
-const searchInputForComputed = computed(() => (searchInput.value ? searchInputDebounced.value : ''));
+const searchInputForComputed = computed(() => (searchInput.value ? searchInputDebounced.value : '').toLowerCase());
 const searchedAssetInfos = computed(() => {
-  if (!searchInputForComputed.value) return store.assetInfos;
-  const searchText = searchInputForComputed.value.toLowerCase();
+  const searchText = searchInputForComputed.value;
+  if (!searchText) return store.assetInfos;
   return store.assetInfos.filter(({ search }) => search.includes(searchText));
 });
 
@@ -201,6 +181,7 @@ const menuConfig: VxeTablePropTypes.MenuConfig<AssetInfo> = reactive({
     if (type !== 'header') {
       return !isMultiSelect.value;
     }
+    if (column?.type === 'checkbox') return false;
     const sortOption = options[1];
     if (column?.sortable) {
       const [cur] = tableRef.value!.getSortColumns();
@@ -268,6 +249,10 @@ const handleMenu: VxeTableEvents.MenuClick<AssetInfo> = async ({ $table, menu, r
   }
 };
 
+const handleHeaderCellMenu: VxeTableEvents.HeaderCellMenu<AssetInfo> = ({ column, $event }) => {
+  if (column.type === 'checkbox') $event.preventDefault();
+};
+
 const handleCellMenu: VxeTableEvents.CellMenu<AssetInfo> = ({ row, $event }) => {
   if (isMultiSelect.value) {
     $event.preventDefault();
@@ -286,10 +271,12 @@ const handleHeaderCellClick: VxeTableEvents.HeaderCellClick<AssetInfo> = ({ colu
 };
 
 const handleBatchExportSelected = () => {
-  if (!tableRef.value || store.isBatchExporting) return;
+  if (!tableRef.value || store.isBatchExporting) return false;
   const selected = tableRef.value.getCheckboxRecords();
+  if (!selected.length) return false;
   store.batchExportAsset(selected);
   handleCancelMultiSelect();
+  return true;
 };
 
 const highlightRowKey = ref('');
@@ -323,15 +310,48 @@ const gotoAsset = async (pathId: bigint) => {
   }, 1.5e3);
 };
 
-defineExpose({ gotoAsset });
+const doExport = (type: string) => {
+  switch (type) {
+    case 'all':
+      if (store.assetInfos.length) {
+        store.exportAllAssets();
+        return;
+      }
+      break;
+    case 'selected':
+      if (handleBatchExportSelected()) return;
+      if (store.curAssetInfo) {
+        store.exportAsset(store.curAssetInfo);
+        return;
+      }
+      break;
+    case 'filtered': {
+      const { visibleData } = tableRef.value?.getTableData() || {};
+      if (visibleData?.length) {
+        store.batchExportAsset(visibleData);
+        return;
+      }
+      break;
+    }
+  }
+  ElMessage({
+    type: 'info',
+    message: 'Nothing to export',
+  });
+};
+
+defineExpose({
+  gotoAsset,
+  doExport,
+});
 </script>
 
 <style lang="scss" scoped>
 .asset-list-table {
   :deep(.highlight) {
-    animation: highlight 1.5s;
+    animation: highlight-animation 1.5s;
 
-    @keyframes highlight {
+    @keyframes highlight-animation {
       0%,
       33%,
       66%,
@@ -394,24 +414,6 @@ defineExpose({ gotoAsset });
 
     .actions {
       margin-left: auto;
-    }
-
-    .progress-bar {
-      --el-border-color-lighter: rgba(0, 0, 0, 0.15);
-      flex-shrink: 0;
-      width: 50%;
-      max-width: 400px;
-    }
-
-    .progress-desc {
-      flex-grow: 1;
-      flex-shrink: 1;
-      min-width: 0;
-      margin-left: 16px;
-      line-height: 24px;
-      overflow: hidden;
-      white-space: nowrap;
-      text-overflow: ellipsis;
     }
   }
 }

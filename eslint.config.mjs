@@ -23,6 +23,7 @@ export default antfu(
       'antfu/top-level-function': 'off',
       'no-console': 'off',
       'no-useless-return': 'warn',
+      'symbol-description': 'off',
       'unused-imports/no-unused-vars': 'warn',
       'import/order': [
         'warn',

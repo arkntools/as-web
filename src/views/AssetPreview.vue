@@ -1,25 +1,18 @@
 <template>
   <el-tabs v-model="activePane" class="asset-preview" type="border-card">
-    <el-tab-pane class="asset-preview-pane" label="Preview" name="preview">
-      <template v-if="activePane === 'preview'">
-        <AssetImageViewer
-          v-if="isImageAsset(store.curAssetInfo)"
-          :asset="store.curAssetInfo"
-          @load-image="store.loadImage"
+    <el-tab-pane label="Preview" name="preview" />
+    <el-tab-pane label="Dump" name="dump" />
+    <div class="asset-preview-pane">
+      <KeepAlive :exclude="['AssetTextViewer']">
+        <component
+          :is="PreviewComponent"
+          :asset="assetManager.curAssetInfo"
+          :desc="enablePreview ? undefined : 'Preview disabled'"
+          @load-image="assetManager.loadImage"
+          @goto-asset="(pathId: any) => emits('gotoAsset', pathId)"
         />
-        <AssetNoPreview v-else />
-      </template>
-    </el-tab-pane>
-    <el-tab-pane class="asset-preview-pane" label="Dump" name="dump">
-      <template v-if="activePane === 'dump'">
-        <AssetDumpViewer
-          v-if="store.curAssetInfo"
-          :asset="store.curAssetInfo"
-          @goto-asset="pathId => emits('gotoAsset', pathId)"
-        />
-        <AssetNoPreview v-else />
-      </template>
-    </el-tab-pane>
+      </KeepAlive>
+    </div>
   </el-tabs>
 </template>
 
@@ -27,23 +20,45 @@
 import AssetDumpViewer from '@/components/AssetDumpViewer.vue';
 import AssetImageViewer from '@/components/AssetImageViewer.vue';
 import AssetNoPreview from '@/components/AssetNoPreview.vue';
+import AssetTextViewer from '@/components/AssetTextViewer.vue';
 import { useAssetManager } from '@/store/assetManager';
-import type { AssetInfo } from '@/workers/assetManager';
+import { useSetting } from '@/store/setting';
 
 const emits = defineEmits<{
   (e: 'gotoAsset', pathId: bigint): void;
 }>();
 
-const store = useAssetManager();
+const assetManager = useAssetManager();
+const setting = useSetting();
 
 const activePane = ref('preview');
 
-const imageAssetTypes = new Set(['Sprite', 'Texture2D']);
-const isImageAsset = (info: AssetInfo | undefined): info is AssetInfo => imageAssetTypes.has(info?.type as any);
+const viewerMap: Record<string, Component | undefined> = {
+  Sprite: AssetImageViewer,
+  Texture2D: AssetImageViewer,
+  TextAsset: AssetTextViewer,
+};
+
+const enablePreview = computed(() => setting.data.enablePreview);
+
+const PreviewComponent = computed(() => {
+  if (!assetManager.curAssetInfo) return AssetNoPreview;
+  switch (activePane.value) {
+    case 'preview': {
+      if (!enablePreview.value) return AssetNoPreview;
+      const Component = viewerMap[assetManager.curAssetInfo.type];
+      return Component || AssetNoPreview;
+    }
+    case 'dump':
+      return AssetDumpViewer;
+  }
+  return AssetNoPreview;
+});
 </script>
 
 <style lang="scss" scoped>
 .asset-preview {
+  --el-tabs-header-height: 36px;
   display: flex;
   flex-direction: column;
   width: 100%;
@@ -60,6 +75,10 @@ const isImageAsset = (info: AssetInfo | undefined): info is AssetInfo => imageAs
     flex-grow: 1;
     flex-shrink: 1;
     min-height: 0;
+  }
+
+  :deep(.el-tab-pane) {
+    display: none;
   }
 }
 </style>

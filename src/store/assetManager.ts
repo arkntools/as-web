@@ -1,10 +1,11 @@
-import type { BundleLoadOptions } from '@arkntools/unity-js';
 import { proxy } from 'comlink';
 import { saveAs } from 'file-saver';
 import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
 import { getDateString } from '@/utils/date';
-import type { AssetInfo, ExportAssetsOnProgress, FileLoadingProgress } from '@/workers/assetManager';
+import type { AssetInfo, ExportAssetsOnProgress, FileLoadingOnProgress } from '@/workers/assetManager';
+import { type ProgressData, useProgress } from './progress';
+import { useSetting } from './setting';
 
 const worker = new ComlinkWorker<typeof import('@/workers/assetManager')>(
   new URL('../workers/assetManager.js', import.meta.url),
@@ -12,26 +13,41 @@ const worker = new ComlinkWorker<typeof import('@/workers/assetManager')>(
 const manager = new worker.AssetManager();
 
 export const useAssetManager = defineStore('assetManager', () => {
+  const progressStore = useProgress();
+  const setting = useSetting();
+
   const assetInfos = ref<AssetInfo[]>([]);
   const isLoading = ref(false);
-  const loadingProgress = ref<FileLoadingProgress>({});
   const curAssetInfo = ref<AssetInfo>();
 
   const assetInfoMap = computed(() => new Map(assetInfos.value.map(info => [info.key, info])));
 
-  const onProgress = proxy((progress: FileLoadingProgress) => {
-    Object.assign(loadingProgress.value, progress);
+  const onProgress = proxy<FileLoadingOnProgress>(({ name, progress, totalAssetNum }) => {
+    progressStore.setProgress({
+      type: 'loading',
+      value: progress,
+      desc: `Loading ${name}, total assets: ${totalAssetNum}`,
+    });
   });
 
-  const loadFiles = async (files: File[], options?: BundleLoadOptions) => {
+  const loadFiles = async (files: File[]) => {
     isLoading.value = true;
     try {
-      const { errors, infos } = await (await manager).loadFiles(files, options, onProgress);
+      const { errors, infos, successNum } = await (
+        await manager
+      ).loadFiles(files, { unityCNKey: setting.unityCNKey }, onProgress);
       infos.forEach(({ dump }) => {
         markRaw(dump);
       });
-      if (infos.length) assetInfos.value = infos;
-      if (errors.length) {
+      if (infos.length) {
+        assetInfos.value = infos;
+        curAssetInfo.value = undefined;
+        ElMessage({
+          message: `Loaded ${infos.length} assets from ${successNum} files`,
+          type: 'success',
+        });
+      }
+      if (files.length === 1 && errors.length) {
         errors.forEach(({ name, error }) => {
           ElMessage({
             message: `Failed to load ${name}: ${error}`,
@@ -46,7 +62,7 @@ export const useAssetManager = defineStore('assetManager', () => {
       });
     } finally {
       isLoading.value = false;
-      loadingProgress.value = {};
+      progressStore.clearProgress();
     }
   };
 
@@ -78,63 +94,68 @@ export const useAssetManager = defineStore('assetManager', () => {
   };
 
   const isBatchExporting = ref(false);
-  const batchExportProgress = ref(0);
-  const batchExportProgressType = ref('');
-  const batchExportDescription = ref('');
-  const isBatchExportPreparing = computed(() => batchExportProgressType.value === 'prepare');
 
   const batchExportOnProgress = proxy<ExportAssetsOnProgress>(({ type, percent, name }) => {
-    batchExportProgress.value = percent;
-    batchExportProgressType.value = type;
+    const data: Partial<ProgressData> = {};
     switch (type) {
-      case 'asset':
-        batchExportDescription.value = `Exporting ${name}`;
+      case 'exportPreparing':
+        data.value = percent * 0.45;
+        data.desc = `Preparing ${name}`;
         break;
-      case 'zip':
-        batchExportDescription.value = `Packing ${name}`;
+      case 'exportAsset':
+        data.value = 45 + percent * 0.5;
+        data.desc = `Exporting ${name}`;
+        break;
+      case 'exportZip':
+        data.value = 95 + percent * 0.05;
+        data.desc = `Packing ${name}`;
         break;
     }
+    progressStore.setProgress(data);
   });
 
-  const batchExportAsset = async (infos: Array<Pick<AssetInfo, 'fileId' | 'pathId'>>) => {
+  const batchExportAsset = async (infos: AssetInfo[]) => {
     if (isBatchExporting.value) return;
     isBatchExporting.value = true;
-    batchExportProgress.value = 0;
-    batchExportProgressType.value = 'prepare';
-    batchExportDescription.value = 'Preparing';
+    progressStore.setProgress({
+      type: 'export',
+      desc: 'Preparing',
+    });
     try {
       const zip = await (
         await manager
       ).exportAssets(
-        infos.map(({ fileId, pathId }) => ({ fileId, pathId })),
+        infos.map(({ fileId, pathId, fileName, container }) => ({ fileId, pathId, fileName, container })),
+        { groupMethod: setting.data.exportGroupMethod },
         batchExportOnProgress,
       );
-      batchExportProgress.value = 100;
-      batchExportDescription.value = '';
-      saveAs(new Blob([zip], { type: 'application/zip' }), `export-${getDateString()}.zip`);
+      progressStore.setProgress({
+        value: 100,
+        desc: '',
+      });
+      saveAs(new Blob([zip], { type: 'application/zip' }), `assets-export-${getDateString()}.zip`);
     } catch (error) {
       console.error(error);
     } finally {
       isBatchExporting.value = false;
+      progressStore.clearProgress();
     }
   };
+
+  const exportAllAssets = () => batchExportAsset(assetInfos.value);
 
   return {
     assetInfos,
     assetInfoMap,
-    isLoading,
-    loadingProgress,
     curAssetInfo,
+    isLoading,
     isBatchExporting,
-    batchExportProgress,
-    batchExportProgressType,
-    batchExportDescription,
-    isBatchExportPreparing,
     loadFiles,
     clearFiles,
     loadImage,
     setCurAssetInfo,
     exportAsset,
     batchExportAsset,
+    exportAllAssets,
   };
 });
