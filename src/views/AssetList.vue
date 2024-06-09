@@ -104,6 +104,7 @@ watch(
 );
 
 const handleDropFiles = async (e: DragEvent) => {
+  if (store.isLoading) return;
   const items = [...(e.dataTransfer?.items ?? [])];
   const files = await getFilesFromDataTransferItems(items);
   if (files.length) store.loadFiles(files);
