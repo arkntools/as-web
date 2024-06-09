@@ -9,13 +9,42 @@ import { ElementPlusResolver } from 'unplugin-vue-components/resolvers';
 import Components from 'unplugin-vue-components/vite';
 import { defineConfig } from 'vite';
 import { comlink } from 'vite-plugin-comlink';
+import { VitePWA } from 'vite-plugin-pwa';
 import SvgLoader from 'vite-svg-loader';
 
 const pathSrc = resolve(__dirname, 'src');
 
 // https://vitejs.dev/config/
 export default defineConfig(({ command }) => ({
+  build: {
+    sourcemap: true,
+  },
   plugins: [
+    VitePWA({
+      registerType: 'autoUpdate',
+      workbox: {
+        maximumFileSizeToCacheInBytes: 4e6,
+      },
+      manifest: {
+        name: 'AS Web',
+        short_name: 'AS Web',
+        background_color: '#f4f4f5',
+        theme_color: '#f4f4f5',
+        display: 'standalone',
+        icons: [
+          {
+            sizes: '192x192',
+            src: '/android-chrome-192x192.png',
+            type: 'image/png',
+          },
+          {
+            sizes: '512x512',
+            src: '/android-chrome-512x512.png',
+            type: 'image/png',
+          },
+        ],
+      },
+    }),
     comlink(),
     Vue(),
     SvgLoader(),

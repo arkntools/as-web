@@ -1,3 +1,4 @@
+import './setup/serviceWorker';
 // eslint-disable-next-line import/order
 import { VxeTableModules } from './setup/vxeTable';
 import 'splitpanes/dist/splitpanes.css';
