@@ -297,6 +297,11 @@ const gotoAsset = async (pathId: bigint) => {
   }
 
   if ($table.isActiveFilterByColumn(null)) await $table.clearFilter();
+  if (searchInput.value) {
+    searchInput.value = '';
+    await sleep();
+    await sleep();
+  }
   $table.scrollToRow(info);
 
   if (highlightTimer) clearTimeout(highlightTimer);
