@@ -16,8 +16,6 @@
     "@arkntools/unity-js": "^3.0.6",
     "@guolao/vue-monaco-editor": "^1.5.1",
     "@iconify-json/ep": "^1.1.15",
-    "@jimp/custom": "^0.22.12",
-    "@jimp/png": "^0.22.12",
     "@vueuse/core": "^10.10.0",
     "comlink": "^4.4.1",
     "element-plus": "^2.7.5",
