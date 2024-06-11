@@ -13,6 +13,7 @@
     "format": "prettier --write src/"
   },
   "dependencies": {
+    "@arkntools/jimp-png": "^1.0.0",
     "@arkntools/unity-js": "^3.0.6",
     "@guolao/vue-monaco-editor": "^1.5.1",
     "@iconify-json/ep": "^1.1.15",
@@ -22,7 +23,6 @@
     "eventemitter3": "^5.0.1",
     "file-saver": "^2.0.5",
     "is-json": "^2.0.1",
-    "jimp-png": "github:arkntools/jimp-png",
     "js-md5": "^0.8.3",
     "jszip": "^3.10.1",
     "lodash-es": "^4.17.21",
