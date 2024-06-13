@@ -8,7 +8,7 @@
     @command="handleCommand"
     @visible-change="visible => (isOpen = visible)"
   >
-    <el-button class="menu-btn" :class="{ active: isOpen }" plain type="info" @mouseenter="handleMouseEnter">{{
+    <el-button class="menu-btn" :class="{ active: isOpen }" plain color="#444" @mouseenter="handleMouseEnter">{{
       config.name
     }}</el-button>
     <template #dropdown>
@@ -95,6 +95,7 @@ defineExpose({
 
 <style lang="scss" scoped>
 .menu-btn {
+  --el-button-bg-color: var(--el-color-info-light-9) !important;
   border: none;
   border-radius: 0;
   outline: none;
