@@ -46,7 +46,8 @@ export type ExportAssetsOnProgress = (param: {
 
 type ZipModule = typeof import('./zip');
 
-const showAssetType = new Set([AssetType.TextAsset, AssetType.Sprite, AssetType.Texture2D]);
+const showAssetType = new Set([AssetType.TextAsset, AssetType.Sprite, AssetType.SpriteAtlas, AssetType.Texture2D]);
+const canExportAssetType = new Set([AssetType.TextAsset, AssetType.Sprite, AssetType.Texture2D]);
 const isTextAssetObj = (obj?: AssetObject): obj is TextAsset => obj?.type === AssetType.TextAsset;
 const isImageAssetObj = (obj?: AssetObject): obj is Sprite | Texture2D =>
   !!obj && (obj.type === AssetType.Sprite || obj.type === AssetType.Texture2D);
@@ -74,6 +75,10 @@ export class AssetManager {
       if (url) URL.revokeObjectURL(url);
     });
     this.imageMap.clear();
+  }
+
+  getCanExportAssetTypes() {
+    return [...canExportAssetType.values()].map(type => AssetType[type]);
   }
 
   async loadFiles(files: File[], options: BundleLoadOptions, onProgress: FileLoadingOnProgress) {
@@ -111,7 +116,7 @@ export class AssetManager {
 
   async exportAsset(fileId: string, pathId: bigint) {
     const obj = this.getAssetObj(fileId, pathId);
-    if (!obj) return;
+    if (!obj || !canExportAssetType.has(obj.type)) return;
     const fileName = getLegalFileName(obj.name);
     switch (obj.type) {
       case AssetType.TextAsset:

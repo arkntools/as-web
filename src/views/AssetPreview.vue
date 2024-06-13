@@ -46,11 +46,9 @@ const enablePreview = computed(() => setting.data.enablePreview);
 const PreviewComponent = computed(() => {
   if (!assetManager.curAssetInfo) return AssetNoPreview;
   switch (activePane.value) {
-    case 'preview': {
+    case 'preview':
       if (!enablePreview.value) return AssetNoPreview;
-      const Component = viewerMap[assetManager.curAssetInfo.type];
-      return Component || AssetNoPreview;
-    }
+      return viewerMap[assetManager.curAssetInfo.type] || AssetDumpViewer;
     case 'dump':
       return AssetDumpViewer;
   }

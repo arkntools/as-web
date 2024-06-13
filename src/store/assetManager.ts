@@ -3,6 +3,7 @@ import { saveAs } from 'file-saver';
 import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
 import { getDateString } from '@/utils/date';
+import { showNotingCanBeExportToast } from '@/utils/toasts';
 import type { AssetInfo, ExportAssetsOnProgress, FileLoadingOnProgress } from '@/workers/assetManager';
 import { type ProgressData, useProgress } from './progress';
 import { useSetting } from './setting';
@@ -21,6 +22,19 @@ export const useAssetManager = defineStore('assetManager', () => {
   const curAssetInfo = ref<AssetInfo>();
 
   const assetInfoMap = computed(() => new Map(assetInfos.value.map(info => [info.key, info])));
+
+  const canExportAssetType = new Set<string>();
+
+  manager
+    .then(m => m.getCanExportAssetTypes())
+    .then(types => {
+      types.forEach(type => {
+        canExportAssetType.add(type);
+      });
+    })
+    .catch(console.error);
+
+  const canExport = ({ type }: Pick<AssetInfo, 'type'>) => canExportAssetType.has(type);
 
   const onProgress = proxy<FileLoadingOnProgress>(({ name, progress, totalAssetNum }) => {
     progressStore.setProgress({
@@ -80,7 +94,11 @@ export const useAssetManager = defineStore('assetManager', () => {
     curAssetInfo.value = info;
   };
 
-  const exportAsset = async ({ name, fileId, pathId }: Pick<AssetInfo, 'name' | 'fileId' | 'pathId'>) => {
+  const exportAsset = async ({ name, fileId, pathId, type }: AssetInfo) => {
+    if (!canExport({ type })) {
+      showNotingCanBeExportToast();
+      return;
+    }
     const file = await (await manager).exportAsset(fileId, pathId);
     if (!file) {
       ElMessage({
@@ -142,7 +160,14 @@ export const useAssetManager = defineStore('assetManager', () => {
     }
   };
 
-  const exportAllAssets = () => batchExportAsset(assetInfos.value);
+  const exportAllAssets = async () => {
+    const canExportAssets = assetInfos.value.filter(canExport);
+    if (!canExportAssets.length) {
+      showNotingCanBeExportToast();
+      return;
+    }
+    await batchExportAsset(assetInfos.value);
+  };
 
   return {
     assetInfos,
@@ -157,5 +182,6 @@ export const useAssetManager = defineStore('assetManager', () => {
     exportAsset,
     batchExportAsset,
     exportAllAssets,
+    canExport,
   };
 });

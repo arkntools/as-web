@@ -68,9 +68,17 @@
       </vxe-table>
     </div>
     <div v-if="isMultiSelect" class="asset-list-table-footer wrap">
-      <div class="footer-block desc">{{ multiSelectNum }} asset{{ multiSelectNum > 1 ? 's' : '' }} selected.</div>
+      <div class="footer-block desc">
+        {{ multiSelectNum }} asset{{ multiSelectNum > 1 ? 's' : '' }} selected{{
+          multiSelectCannotExportNum > 0 ? `, ${multiSelectCannotExportNum} can't be exported` : ''
+        }}.
+      </div>
       <div class="footer-block actions">
-        <el-button type="primary" size="small" :disabled="store.isBatchExporting" @click="handleBatchExportSelected"
+        <el-button
+          type="primary"
+          size="small"
+          :disabled="store.isBatchExporting || multiSelectNum === multiSelectCannotExportNum"
+          @click="handleBatchExportSelected"
           >Export selected</el-button
         >
         <el-button type="primary" size="small" @click="handleCancelMultiSelect">Cancel</el-button>
@@ -88,6 +96,7 @@ import type { VxeTableEvents, VxeTableInstance, VxeTablePropTypes } from 'vxe-ta
 import { useAssetManager } from '@/store/assetManager';
 import { sleep } from '@/utils/common';
 import { getFilesFromDataTransferItems } from '@/utils/file';
+import { showNotingCanBeExportToast } from '@/utils/toasts';
 import type { AssetInfo } from '@/workers/assetManager';
 import ProgressBar from './components/ProgressBar.vue';
 import IElSearch from '~icons/ep/search';
@@ -120,15 +129,18 @@ const searchedAssetInfos = computed(() => {
 });
 
 const isMultiSelect = ref(false);
-const multiSelectNum = ref(0);
+const multiSelectRows = shallowRef<AssetInfo[]>([]);
+const multiSelectNum = computed(() => multiSelectRows.value.length);
+const multiSelectCannotExportNum = computed(() => multiSelectRows.value.filter(row => !store.canExport(row)).length);
 
 const updateMultiSelectNum = () => {
-  multiSelectNum.value = tableRef.value!.getCheckboxRecords().length;
+  multiSelectRows.value = tableRef.value!.getCheckboxRecords();
 };
 
 const handleCancelMultiSelect = () => {
   tableRef.value?.clearCheckboxRow();
   isMultiSelect.value = false;
+  multiSelectRows.value = [];
 };
 
 const setCurrentRow = (row: AssetInfo) => {
@@ -173,14 +185,16 @@ const menuConfig: VxeTablePropTypes.MenuConfig<AssetInfo> = reactive({
     options: [
       [
         { code: 'copy', name: 'Copy text', prefixIcon: 'vxe-icon-copy' },
-        { code: 'export', name: 'Export select asset', prefixIcon: 'vxe-icon-save' },
+        { code: 'export', name: 'Export select asset', prefixIcon: 'vxe-icon-save', disabled: false },
       ],
       [{ code: 'multiselect', name: 'Multi select', prefixIcon: 'vxe-icon-square-checked' }],
     ],
   },
   visibleMethod: ({ type, options, columns, column, row }) => {
     if (type !== 'header') {
-      return !isMultiSelect.value && !!row;
+      if (isMultiSelect.value || !row) return false;
+      options[0][1].disabled = !store.canExport(row);
+      return true;
     }
     if (column?.type === 'checkbox') return false;
     const sortOption = options[1];
@@ -226,8 +240,8 @@ const handleMenu: VxeTableEvents.MenuClick<AssetInfo> = async ({ $table, menu, r
       break;
     case 'multiselect':
       isMultiSelect.value = true;
-      multiSelectNum.value = 1;
-      $table.setCheckboxRow(row, true);
+      await $table.setCheckboxRow(row, true);
+      updateMultiSelectNum();
       break;
     case 'hideColumn':
       await $table.hideColumn(column);
@@ -272,10 +286,13 @@ const handleHeaderCellClick: VxeTableEvents.HeaderCellClick<AssetInfo> = ({ colu
 };
 
 const handleBatchExportSelected = () => {
-  if (!tableRef.value || store.isBatchExporting) return false;
-  const selected = tableRef.value.getCheckboxRecords();
-  if (!selected.length) return false;
-  store.batchExportAsset(selected);
+  if (!tableRef.value || store.isBatchExporting || !isMultiSelect.value) return false;
+  const canExportRows = multiSelectRows.value.filter(store.canExport);
+  if (!canExportRows.length) {
+    showNotingCanBeExportToast();
+    return true;
+  }
+  store.batchExportAsset(canExportRows);
   handleCancelMultiSelect();
   return true;
 };
@@ -333,17 +350,15 @@ const doExport = (type: string) => {
       break;
     case 'filtered': {
       const { visibleData } = tableRef.value?.getTableData() || {};
-      if (visibleData?.length) {
-        store.batchExportAsset(visibleData);
+      const canExportRows = visibleData?.filter(store.canExport);
+      if (canExportRows?.length) {
+        store.batchExportAsset(canExportRows);
         return;
       }
       break;
     }
   }
-  ElMessage({
-    type: 'info',
-    message: 'Nothing to export',
-  });
+  showNotingCanBeExportToast();
 };
 
 defineExpose({
@@ -401,6 +416,7 @@ defineExpose({
     flex-shrink: 0;
     align-items: center;
     padding: 8px 16px;
+    font-size: 14px;
     background-color: var(--el-color-info-light-9);
 
     &.wrap {
