@@ -51,7 +51,7 @@ export default defineConfig(({ command }) => ({
     AutoImport({
       imports: ['vue'],
       dirs: [],
-      resolvers: [ElementPlusResolver({ importStyle: 'sass' })],
+      resolvers: [ElementPlusResolver()],
       vueTemplate: true,
       dts: command === 'serve' ? resolve(pathSrc, 'auto-imports.d.ts') : false,
       eslintrc: {
@@ -64,7 +64,7 @@ export default defineConfig(({ command }) => ({
       dirs: [],
       resolvers: [
         IconsResolver({ enabledCollections: ['ep'], alias: { el: 'ep' } }),
-        ElementPlusResolver({ importStyle: 'sass' }),
+        ElementPlusResolver(),
         VxeResolver({ libraryName: 'vxe-table', importStyle: true }),
       ],
       dts: command === 'serve' ? resolve(pathSrc, 'components.d.ts') : false,
