@@ -40,7 +40,7 @@
         @menu-click="handleMenu"
         @header-cell-menu="handleHeaderCellMenu"
         @cell-menu="handleCellMenu"
-        @cell-click="updateMultiSelectNum"
+        @cell-click="handleCellClick"
         @current-change="handleCurrentChange"
         @header-cell-click="handleHeaderCellClick"
         @checkbox-range-end="updateMultiSelectNum"
@@ -133,8 +133,35 @@ const multiSelectRows = shallowRef<AssetInfo[]>([]);
 const multiSelectNum = computed(() => multiSelectRows.value.length);
 const multiSelectCannotExportNum = computed(() => multiSelectRows.value.filter(row => !store.canExport(row)).length);
 
+let lastAssetInfo: AssetInfo | undefined;
+
 const updateMultiSelectNum = () => {
   multiSelectRows.value = tableRef.value!.getCheckboxRecords();
+};
+
+const handleCellClick: VxeTableEvents.CellClick<AssetInfo> = async ({ row, $event }) => {
+  const { ctrlKey, shiftKey } = $event as MouseEvent;
+  const $table = tableRef.value!;
+  let lastRowIndex: number;
+  if (
+    (ctrlKey || shiftKey) &&
+    !isMultiSelect.value &&
+    lastAssetInfo &&
+    (lastRowIndex = $table.getVTRowIndex(lastAssetInfo)) >= 0
+  ) {
+    const rowIndex = $table.getVTRowIndex(row);
+    isMultiSelect.value = true;
+    if (shiftKey) {
+      const { visibleData } = $table.getTableData();
+      await $table.setCheckboxRow(
+        visibleData.slice(Math.min(lastRowIndex, rowIndex), Math.max(lastRowIndex, rowIndex) + 1),
+        true,
+      );
+    } else if (ctrlKey) {
+      await $table.setCheckboxRow([lastAssetInfo, row], true);
+    }
+  }
+  if (isMultiSelect.value) updateMultiSelectNum();
 };
 
 const handleCancelMultiSelect = () => {
@@ -145,6 +172,7 @@ const handleCancelMultiSelect = () => {
 
 const setCurrentRow = (row: AssetInfo) => {
   if (!tableRef.value) return;
+  lastAssetInfo = store.curAssetInfo;
   tableRef.value.setCurrentRow(row);
   store.setCurAssetInfo(row);
 };
@@ -277,6 +305,7 @@ const handleCellMenu: VxeTableEvents.CellMenu<AssetInfo> = ({ row, $event }) => 
 };
 
 const handleCurrentChange: VxeTableEvents.CurrentChange<AssetInfo> = ({ row }) => {
+  lastAssetInfo = store.curAssetInfo;
   store.setCurAssetInfo(row);
 };
 
