@@ -27,6 +27,7 @@ declare module 'vue' {
     ElTabPane: typeof import('element-plus/es')['ElTabPane']
     ElTabs: typeof import('element-plus/es')['ElTabs']
     ElText: typeof import('element-plus/es')['ElText']
+    IElArrowDown: typeof import('~icons/ep/arrow-down')['default']
     IElPromotion: typeof import('~icons/ep/promotion')['default']
     VxeColumn: typeof import('vxe-table/es/column/index.js')['VxeColumn']
     VxeTable: typeof import('vxe-table/es/table/index.js')['VxeTable']
