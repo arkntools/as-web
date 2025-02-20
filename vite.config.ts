@@ -21,7 +21,7 @@ export default defineConfig(({ command }) => ({
   },
   plugins: [
     VitePWA({
-      registerType: 'autoUpdate',
+      registerType: 'prompt',
       workbox: {
         maximumFileSizeToCacheInBytes: 4e6,
       },
