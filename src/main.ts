@@ -1,10 +1,10 @@
 import './setup/serviceWorker';
-// eslint-disable-next-line import/order
-import { VxeTableModules } from './setup/vxeTable';
+import './setup/vxeTableStyle';
 import 'splitpanes/dist/splitpanes.css';
 import './main.scss';
 import { createPinia } from 'pinia';
 import App from './App.vue';
+import { VxeTableModules } from './setup/vxeTable';
 
 const app = createApp(App);
 

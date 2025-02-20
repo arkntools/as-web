@@ -1,7 +1,3 @@
-import 'vxe-table/styles/cssvar.scss';
-import 'vxe-table/es/vxe-table-menu-module/style.css';
-import 'vxe-table/es/vxe-icon/style.css';
-import 'vxe-table/es/filter/style.css';
 import type { Plugin } from 'vue';
 import { setConfig } from 'vxe-table/es/v-x-e-table';
 import VxeTableFilterModule from 'vxe-table/es/vxe-table-filter-module';

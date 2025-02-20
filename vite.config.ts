@@ -1,5 +1,5 @@
 import { resolve } from 'node:path';
-import { URL, fileURLToPath } from 'node:url';
+import { fileURLToPath, URL } from 'node:url';
 import Vue from '@vitejs/plugin-vue';
 import { VxeResolver } from '@vxecli/import-unplugin-vue-components';
 import AutoImport from 'unplugin-auto-import/vite';

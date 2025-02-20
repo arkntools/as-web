@@ -12,13 +12,14 @@
 
 <script setup lang="ts">
 import { useFileDialog } from '@vueuse/core';
+import IElSelect from '~icons/ep/select';
 import IconGithub from '@/assets/github.svg';
-import MenuBar, { type MenuBarConfig } from '@/components/MenuBar.vue';
+import MenuBar from '@/components/MenuBar.vue';
+import type { MenuBarConfig } from '@/components/MenuBar.vue';
 import { useAssetManager } from '@/store/assetManager';
 import { useSetting } from '@/store/setting';
 import ExportOptionsDialog from './components/ExportOptionsDialog.vue';
 import UnityCNOptionsDialog from './components/UnityCNOptionsDialog.vue';
-import IElSelect from '~icons/ep/select';
 
 const emits = defineEmits<{
   (name: 'commandExport', type: string): any;

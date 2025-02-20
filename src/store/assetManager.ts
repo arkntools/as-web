@@ -5,7 +5,8 @@ import { computed, ref } from 'vue';
 import { getDateString } from '@/utils/date';
 import { showNotingCanBeExportToast } from '@/utils/toasts';
 import type { AssetInfo, ExportAssetsOnProgress, FileLoadingOnProgress } from '@/workers/assetManager';
-import { type ProgressData, useProgress } from './progress';
+import { useProgress } from './progress';
+import type { ProgressData } from './progress';
 import { useSetting } from './setting';
 
 const worker = new ComlinkWorker<typeof import('@/workers/assetManager')>(

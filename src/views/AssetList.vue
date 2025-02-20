@@ -92,6 +92,7 @@
 
 <script setup lang="ts">
 import { refDebounced } from '@vueuse/core';
+import IElSearch from '~icons/ep/search';
 import type { VxeTableEvents, VxeTableInstance, VxeTablePropTypes } from 'vxe-table';
 import { useAssetManager } from '@/store/assetManager';
 import { sleep } from '@/utils/common';
@@ -99,7 +100,6 @@ import { getFilesFromDataTransferItems } from '@/utils/file';
 import { showNotingCanBeExportToast } from '@/utils/toasts';
 import type { AssetInfo } from '@/workers/assetManager';
 import ProgressBar from './components/ProgressBar.vue';
-import IElSearch from '~icons/ep/search';
 
 const tableRef = ref<VxeTableInstance<AssetInfo>>();
 
