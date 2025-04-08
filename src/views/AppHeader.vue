@@ -11,11 +11,13 @@
 </template>
 
 <script setup lang="ts">
+import { BundleEnv } from '@arkntools/unity-js';
 import { useFileDialog } from '@vueuse/core';
 import IElSelect from '~icons/ep/select';
 import IconGithub from '@/assets/github.svg';
 import MenuBar from '@/components/MenuBar.vue';
 import type { MenuBarConfig } from '@/components/MenuBar.vue';
+import type { MenuDropdownConfigItem } from '@/components/MenuDropdown.vue';
 import { useAssetManager } from '@/store/assetManager';
 import { useSetting } from '@/store/setting';
 import ExportOptionsDialog from './components/ExportOptionsDialog.vue';
@@ -45,6 +47,19 @@ onFileChange(loadFiles);
 
 const { open: openFolder, onChange: onFolderChange } = useFileDialog({ directory: true, reset: true });
 onFolderChange(loadFiles);
+
+const getEnvMenuItem = (
+  name: string,
+  value: (typeof setting.data)['unityEnv'],
+  divided?: boolean,
+): MenuDropdownConfigItem => ({
+  name,
+  divided,
+  handler: () => {
+    setting.data.unityEnv = value;
+  },
+  icon: () => (setting.data.unityEnv === value ? IElSelect : undefined),
+});
 
 const menuConfig = markRaw<MenuBarConfig>([
   {
@@ -87,6 +102,11 @@ const menuConfig = markRaw<MenuBarConfig>([
         },
       },
     ],
+  },
+  {
+    name: 'Env',
+    icon: true,
+    items: [getEnvMenuItem('None', BundleEnv.NONE), getEnvMenuItem('Arknights', BundleEnv.ARKNIGHTS, true)],
   },
   {
     name: 'Export',

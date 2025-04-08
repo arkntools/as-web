@@ -1,3 +1,4 @@
+import { BundleEnv } from '@arkntools/unity-js';
 import { useLocalStorage } from '@vueuse/core';
 import { pick } from 'lodash-es';
 import { defineStore } from 'pinia';
@@ -11,6 +12,7 @@ export const useSetting = defineStore('setting', () => {
       exportGroupMethod: ExportGroupMethod.NONE,
       unityCNKeyEnabled: false,
       unityCNKey: '',
+      unityEnv: BundleEnv.ARKNIGHTS,
     },
     {
       mergeDefaults: (storageValue, defaults) => ({

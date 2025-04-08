@@ -82,6 +82,7 @@ export class AssetManager {
   }
 
   async loadFiles(files: File[], options: BundleLoadOptions, onProgress: FileLoadingOnProgress) {
+    console.log('options: ', options);
     const errors: Array<FileLoadingError> = [];
     const infos: AssetInfo[] = [];
     let successNum = 0;

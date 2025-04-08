@@ -48,9 +48,17 @@ export const useAssetManager = defineStore('assetManager', () => {
   const loadFiles = async (files: File[]) => {
     isLoading.value = true;
     try {
+      console.log(setting);
       const { errors, infos, successNum } = await (
         await manager
-      ).loadFiles(files, { unityCNKey: setting.unityCNKey }, onProgress);
+      ).loadFiles(
+        files,
+        {
+          unityCNKey: setting.unityCNKey,
+          env: setting.data.unityEnv,
+        },
+        onProgress,
+      );
       infos.forEach(({ dump }) => {
         markRaw(dump);
       });

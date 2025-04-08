@@ -34,13 +34,15 @@ import { closeMenuExceptKey, hasMenuOpenKey } from '@/types/menuProvide';
 export interface MenuDropdownConfig {
   name: string;
   icon?: boolean;
-  items: Array<{
-    name: string;
-    handler: () => any;
-    disabled?: () => boolean;
-    divided?: boolean;
-    icon?: () => InstanceType<typeof ElDropdownItem>['icon'];
-  }>;
+  items: MenuDropdownConfigItem[];
+}
+
+export interface MenuDropdownConfigItem {
+  name: string;
+  handler: () => any;
+  disabled?: () => boolean;
+  divided?: boolean;
+  icon?: () => InstanceType<typeof ElDropdownItem>['icon'];
 }
 
 const props = defineProps<{
