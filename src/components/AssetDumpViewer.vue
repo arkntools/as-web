@@ -185,6 +185,7 @@ const handleMenu: VxeTableEvents.MenuClick<DumpRow> = async ({ $table, menu, row
 
 <style lang="scss" scoped>
 .asset-dump-table {
+  --vxe-table-row-height-mini: 22px;
   user-select: text;
 
   :deep(.asset-dump-table__cell) {
