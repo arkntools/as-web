@@ -33,7 +33,7 @@ declare module 'vue' {
     VxeColumn: typeof import('vxe-table/es/column/index.js')['VxeColumn']
     VxeTable: typeof import('vxe-table/es/table/index.js')['VxeTable']
   }
-  export interface ComponentCustomProperties {
+  export interface GlobalDirectives {
     vLoading: typeof import('element-plus/es')['ElLoadingDirective']
   }
 }
