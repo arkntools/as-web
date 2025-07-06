@@ -2,7 +2,7 @@
   <el-tabs v-model="activePane" class="asset-preview" type="border-card">
     <el-tab-pane label="Preview" name="preview" />
     <el-tab-pane label="Type tree" name="typeTree" />
-    <el-tab-pane label="Dump" name="dump" />
+    <el-tab-pane label="Inspect" name="inspect" />
     <div class="asset-preview-pane">
       <KeepAlive :exclude="['AssetTextViewer', 'AssetTypeTreeViewer']">
         <component
@@ -18,7 +18,7 @@
 </template>
 
 <script setup lang="ts">
-import AssetDumpViewer from '@/components/AssetDumpViewer.vue';
+import AssetDumpViewer from '@/components/AssetInspectViewer.vue';
 import AssetImageViewer from '@/components/AssetImageViewer.vue';
 import AssetNoPreview from '@/components/AssetNoPreview.vue';
 import AssetTextViewer from '@/components/AssetTextViewer.vue';
@@ -53,7 +53,7 @@ const PreviewComponent = computed(() => {
       return AssetNoPreview;
     case 'typeTree':
       return AssetTypeTreeViewer;
-    case 'dump':
+    case 'inspect':
       return AssetDumpViewer;
   }
   return AssetNoPreview;
