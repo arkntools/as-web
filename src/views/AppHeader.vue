@@ -89,6 +89,13 @@ const menuConfig = markRaw<MenuBarConfig>([
         icon: () => (setting.data.enablePreview ? IElSelect : undefined),
       },
       {
+        name: 'Hide nameless assets',
+        handler: () => {
+          setting.data.hideNamelessAssets = !setting.data.hideNamelessAssets;
+        },
+        icon: () => (setting.data.hideNamelessAssets ? IElSelect : undefined),
+      },
+      {
         name: 'Export options',
         divided: true,
         handler: () => {

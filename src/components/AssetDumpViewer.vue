@@ -40,7 +40,7 @@
 </template>
 
 <script setup lang="ts">
-import { mapValues, omit } from 'lodash-es';
+import { mapValues, omit } from 'es-toolkit';
 import { uid } from 'uid';
 import type { VxeTableEvents, VxeTableInstance, VxeTablePropTypes } from 'vxe-table';
 import { hasSelection } from '@/utils/common';
@@ -102,7 +102,9 @@ const dumpToRows = (rows: DumpRow[], value: any, name: string, parentId?: string
       row.value = (value as any[]).map((item, i) => dumpToRows(rows, item, String(i), id));
       break;
     case 'object':
-      row.value = mapValues(className ? omit(value, '__class') : value, (v, k) => dumpToRows(rows, v, k, id));
+      row.value = mapValues(className ? omit(value, ['__class']) : value, (v, k) =>
+        dumpToRows(rows, v, k as string, id),
+      );
       break;
     case 'bigint':
       row.value = String(value);

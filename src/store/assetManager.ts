@@ -24,18 +24,7 @@ export const useAssetManager = defineStore('assetManager', () => {
 
   const assetInfoMap = computed(() => new Map(assetInfos.value.map(info => [info.key, info])));
 
-  const canExportAssetType = new Set<string>();
-
-  manager
-    .then(m => m.getCanExportAssetTypes())
-    .then(types => {
-      types.forEach(type => {
-        canExportAssetType.add(type);
-      });
-    })
-    .catch(console.error);
-
-  const canExport = ({ type }: Pick<AssetInfo, 'type'>) => canExportAssetType.has(type);
+  const canExport = ({ canExport }: AssetInfo) => canExport;
 
   const onProgress = proxy<FileLoadingOnProgress>(({ name, progress, totalAssetNum }) => {
     progressStore.setProgress({
@@ -48,7 +37,6 @@ export const useAssetManager = defineStore('assetManager', () => {
   const loadFiles = async (files: File[]) => {
     isLoading.value = true;
     try {
-      console.log(setting);
       const { errors, infos, successNum } = await (
         await manager
       ).loadFiles(
@@ -94,17 +82,28 @@ export const useAssetManager = defineStore('assetManager', () => {
     await (await manager).clear();
   };
 
-  const loadImage = async ({ key, fileId, pathId }: Pick<AssetInfo, 'key' | 'fileId' | 'pathId'>) => {
-    const img = await (await manager).getImageUrl(fileId, pathId);
-    assetInfoMap.value.get(key)!.data = img ?? null;
+  const loadImage = async ({ key, fileId, pathId }: Pick<AssetInfo, 'key' | 'fileId' | 'pathId'>, subKey?: string) => {
+    const img = await (await manager).getImageUrl(fileId, pathId, subKey);
+    const data = assetInfoMap.value.get(key)?.data;
+    if (!data) return;
+    switch (data.type) {
+      case 'image':
+        data.url = img;
+        return;
+      case 'imageList':
+        if (!subKey) return;
+        const item = data.list.find(item => item.key === subKey);
+        if (item) item.url = img;
+        return;
+    }
   };
 
   const setCurAssetInfo = (info: AssetInfo) => {
     curAssetInfo.value = info;
   };
 
-  const exportAsset = async ({ name, fileId, pathId, type }: AssetInfo) => {
-    if (!canExport({ type })) {
+  const exportAsset = async ({ name, fileId, pathId, canExport }: AssetInfo) => {
+    if (!canExport) {
       showNotingCanBeExportToast();
       return;
     }

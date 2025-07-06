@@ -34,6 +34,7 @@ export default antfu(
       globals: autoImport.globals as any as Linter.Globals,
     },
     rules: {
+      'antfu/consistent-list-newline': 'off',
       'style/semi': 'off',
       'style/member-delimiter-style': 'off',
       'style/arrow-parens': ['warn', 'as-needed'],

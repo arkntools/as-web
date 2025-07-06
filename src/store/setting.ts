@@ -1,6 +1,6 @@
 import { BundleEnv } from '@arkntools/unity-js';
 import { useLocalStorage } from '@vueuse/core';
-import { pick } from 'lodash-es';
+import { pick } from 'es-toolkit';
 import { defineStore } from 'pinia';
 import { ExportGroupMethod } from '@/types/export';
 
@@ -9,6 +9,7 @@ export const useSetting = defineStore('setting', () => {
     'settings',
     {
       enablePreview: true,
+      hideNamelessAssets: true,
       exportGroupMethod: ExportGroupMethod.NONE,
       unityCNKeyEnabled: false,
       unityCNKey: '',
@@ -17,7 +18,7 @@ export const useSetting = defineStore('setting', () => {
     {
       mergeDefaults: (storageValue, defaults) => ({
         ...defaults,
-        ...pick(storageValue, Object.keys(defaults) as any as keyof typeof defaults),
+        ...pick(storageValue, Object.keys(defaults) as any),
       }),
     },
   );

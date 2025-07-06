@@ -1,29 +1,17 @@
 <template>
-  <VueMonacoEditor :value="asset.data || ''" :options="options" :language="language" />
+  <TextViewerAsync :data />
 </template>
 
 <script setup lang="ts">
-import '@/setup/monacoEditor';
-import { VueMonacoEditor } from '@guolao/vue-monaco-editor';
-import isJson from 'is-json';
-import type { editor } from 'monaco-editor/esm/vs/editor/editor.api';
+import TextViewerAsync from './TextViewerAsync';
 import type { AssetInfo } from '@/workers/assetManager';
 
 const props = defineProps<{
   asset: AssetInfo;
 }>();
 
-const language = computed(() => (isJson(props.asset.data) ? 'json' : undefined));
-
-const options: editor.IStandaloneEditorConstructionOptions = {
-  readOnly: true,
-  wordWrap: 'on',
-  unicodeHighlight: {
-    ambiguousCharacters: false,
-    includeComments: false,
-    includeStrings: false,
-    invisibleCharacters: false,
-    nonBasicASCII: false,
-  },
-};
+const data = computed(() => {
+  const assetData = props.asset.data;
+  return assetData?.type === 'text' ? assetData.data : '';
+});
 </script>

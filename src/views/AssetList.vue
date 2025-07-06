@@ -57,12 +57,12 @@
         ></vxe-column>
         <vxe-column field="name" title="Name" fixed="left" :min-width="120" sortable></vxe-column>
         <vxe-column field="container" title="Container" :min-width="60" sortable></vxe-column>
-        <vxe-column field="type" title="Type" :width="90" sortable :filters="typeFilterOptions"></vxe-column>
+        <vxe-column field="type" title="Type" :width="110" sortable :filters="typeFilterOptions"></vxe-column>
         <vxe-column field="pathId" title="PathID" :min-width="60"></vxe-column>
         <vxe-column field="size" title="Size" align="right" header-align="left" :width="80" sortable></vxe-column>
         <template #empty>
           <el-text :style="{ fontSize: '30px', color: 'var(--el-color-info-light-3)' }">
-            {{ store.assetInfos.length ? 'No data' : 'Drop files here or click "File" menu to load files' }}
+            {{ filteredAssetInfos.length ? 'No data' : 'Drop files here or click "File" menu to load files' }}
           </el-text>
         </template>
       </vxe-table>
@@ -95,6 +95,7 @@ import { refDebounced } from '@vueuse/core';
 import IElSearch from '~icons/ep/search';
 import type { VxeTableEvents, VxeTableInstance, VxeTablePropTypes } from 'vxe-table';
 import { useAssetManager } from '@/store/assetManager';
+import { useSetting } from '@/store/setting';
 import { sleep } from '@/utils/common';
 import { getFilesFromDataTransferItems } from '@/utils/file';
 import { showNotingCanBeExportToast } from '@/utils/toasts';
@@ -104,6 +105,7 @@ import ProgressBar from './components/ProgressBar.vue';
 const tableRef = ref<VxeTableInstance<AssetInfo>>();
 
 const store = useAssetManager();
+const setting = useSetting();
 
 watch(
   () => store.curAssetInfo,
@@ -119,13 +121,17 @@ const handleDropFiles = async (e: DragEvent) => {
   if (files.length) store.loadFiles(files);
 };
 
+const filteredAssetInfos = computed(() =>
+  setting.data.hideNamelessAssets ? store.assetInfos.filter(({ name }) => name) : store.assetInfos,
+);
+
 const searchInput = ref('');
 const searchInputDebounced = refDebounced(searchInput, 200);
 const searchInputForComputed = computed(() => (searchInput.value ? searchInputDebounced.value : '').toLowerCase());
 const searchedAssetInfos = computed(() => {
   const searchText = searchInputForComputed.value;
-  if (!searchText) return store.assetInfos;
-  return store.assetInfos.filter(({ search }) => search.includes(searchText));
+  if (!searchText) return filteredAssetInfos.value;
+  return filteredAssetInfos.value.filter(({ search }) => search.includes(searchText));
 });
 
 const isMultiSelect = ref(false);
@@ -191,7 +197,9 @@ const switchColumnSort = (field: string) => {
 };
 
 const typeFilterOptions = computed(() =>
-  [...new Set(store.assetInfos.map(({ type }) => type)).values()].sort().map(value => ({ label: value, value })),
+  [...new Set(filteredAssetInfos.value.map(({ type }) => type)).values()]
+    .sort()
+    .map(value => ({ label: value, value })),
 );
 
 const menuConfig: VxeTablePropTypes.MenuConfig<AssetInfo> = reactive({

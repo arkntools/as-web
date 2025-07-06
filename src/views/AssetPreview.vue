@@ -1,12 +1,13 @@
 <template>
   <el-tabs v-model="activePane" class="asset-preview" type="border-card">
     <el-tab-pane label="Preview" name="preview" />
+    <el-tab-pane label="Type tree" name="typeTree" />
     <el-tab-pane label="Dump" name="dump" />
     <div class="asset-preview-pane">
-      <KeepAlive :exclude="['AssetTextViewerAsync']">
+      <KeepAlive :exclude="['AssetTextViewer', 'AssetTypeTreeViewer']">
         <component
           :is="PreviewComponent"
-          :asset="assetManager.curAssetInfo"
+          :asset="assetManager.curAssetInfo!"
           :desc="enablePreview ? undefined : 'Preview disabled'"
           @load-image="assetManager.loadImage"
           @goto-asset="(pathId: any) => emits('gotoAsset', pathId)"
@@ -20,8 +21,11 @@
 import AssetDumpViewer from '@/components/AssetDumpViewer.vue';
 import AssetImageViewer from '@/components/AssetImageViewer.vue';
 import AssetNoPreview from '@/components/AssetNoPreview.vue';
+import AssetTextViewer from '@/components/AssetTextViewer.vue';
+import AssetTypeTreeViewer from '@/components/AssetTypeTreeViewer.vue';
 import { useAssetManager } from '@/store/assetManager';
 import { useSetting } from '@/store/setting';
+import type { AssetInfoData } from '@/workers/assetManager';
 
 const emits = defineEmits<{
   (e: 'gotoAsset', pathId: bigint): void;
@@ -32,23 +36,23 @@ const setting = useSetting();
 
 const activePane = ref('preview');
 
-const viewerMap: Record<string, Component | undefined> = {
-  Sprite: AssetImageViewer,
-  Texture2D: AssetImageViewer,
-  TextAsset: (c => {
-    c.name = 'AssetTextViewerAsync';
-    return c;
-  })(defineAsyncComponent(() => import('@/components/AssetTextViewer.vue'))),
-};
-
 const enablePreview = computed(() => setting.data.enablePreview);
 
+const isTextData = (data: AssetInfoData) => data.type === 'text';
+const isImageData = (data: AssetInfoData) => data.type === 'image' || (data.type === 'imageList' && !!data.list.length);
+
 const PreviewComponent = computed(() => {
-  if (!assetManager.curAssetInfo) return AssetNoPreview;
+  const info = assetManager.curAssetInfo;
+  if (!info) return AssetNoPreview;
   switch (activePane.value) {
     case 'preview':
-      if (!enablePreview.value) return AssetNoPreview;
-      return viewerMap[assetManager.curAssetInfo.type] || AssetDumpViewer;
+      const data = info.data;
+      if (!enablePreview.value || !data) return AssetNoPreview;
+      if (isImageData(data)) return AssetImageViewer;
+      if (isTextData(data)) return AssetTextViewer;
+      return AssetNoPreview;
+    case 'typeTree':
+      return AssetTypeTreeViewer;
     case 'dump':
       return AssetDumpViewer;
   }
