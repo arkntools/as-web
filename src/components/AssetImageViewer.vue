@@ -11,7 +11,7 @@
         </el-scrollbar>
       </el-splitter-panel>
       <el-splitter-panel :min="200" class="asset-image-viewer-panel">
-        <ImageViewer :src />
+        <ImageViewer :src :name />
       </el-splitter-panel>
     </el-splitter>
   </div>
@@ -42,6 +42,7 @@ const curSelectItem = computed(() => imgList.value.get(curSelectKey.value));
 
 const data = computed(() => asset.data! as Extract<AssetInfoData, { type: 'image' | 'imageList' }>);
 const src = computed(() => (data.value.type === 'imageList' ? curSelectItem.value?.url : data.value.url));
+const name = computed(() => (data.value.type === 'imageList' ? curSelectItem.value?.name : asset.name));
 
 const handleSelect = (key: string) => {
   curSelectKey.value = key;

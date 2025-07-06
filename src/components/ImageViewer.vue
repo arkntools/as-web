@@ -25,13 +25,19 @@
         </el-dropdown-menu>
       </template>
     </el-dropdown>
+    <el-button class="download-btn" type="info" @click="handleDownload"
+      ><el-icon :size="20"><i-el-download /></el-icon
+    ></el-button>
     <div v-if="src === undefined" v-loading="true" class="loading"></div>
   </div>
 </template>
 
 <script setup lang="ts">
-const { src } = defineProps<{
+import { saveAs } from 'file-saver';
+
+const { src, name } = defineProps<{
   src?: string | null;
+  name?: string;
 }>();
 
 const PNG_1PX =
@@ -45,6 +51,12 @@ const bgType = ref('transparent');
 const handleLoad = (e: Event) => {
   const img = e.target as HTMLImageElement;
   imageInfo.value = !img.src || img.src === PNG_1PX ? '' : `${img.naturalWidth}×${img.naturalHeight}`;
+};
+
+const handleDownload = () => {
+  if (src) {
+    saveAs(src, `${name || 'image'}.png`);
+  }
 };
 </script>
 
@@ -112,6 +124,15 @@ const handleLoad = (e: Event) => {
   &-btn {
     text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
   }
+}
+
+.download-btn {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  width: 36px;
+  height: 36px;
+  padding: 0;
 }
 
 .loading {
