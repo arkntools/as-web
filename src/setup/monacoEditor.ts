@@ -1,5 +1,7 @@
+import 'monaco-editor/esm/vs/language/json/monaco.contribution';
 import { loader } from '@guolao/vue-monaco-editor';
-import * as monaco from 'monaco-editor';
+// @ts-ignore
+import * as monaco from 'monaco-editor/esm/vs/editor/edcore.main';
 import EditorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
 import JsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker';
 

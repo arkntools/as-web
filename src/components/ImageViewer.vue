@@ -28,12 +28,13 @@
     <el-button class="download-btn" type="info" @click="handleDownload"
       ><el-icon :size="20"><i-el-download /></el-icon
     ></el-button>
-    <div v-if="src === undefined" v-loading="true" class="loading"></div>
+    <FullSizeLoading :loading="!src" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { saveAs } from 'file-saver';
+import FullSizeLoading from './FullSizeLoading.vue';
 
 const { src, name } = defineProps<{
   src?: string | null;
@@ -43,7 +44,7 @@ const { src, name } = defineProps<{
 const PNG_1PX =
   'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAAtJREFUGFdjYAACAAAFAAGq1chRAAAAAElFTkSuQmCC';
 
-const useSrc = computed(() => (src === null ? undefined : src || PNG_1PX));
+const useSrc = computed(() => src || PNG_1PX);
 
 const imageInfo = ref('');
 const bgType = ref('transparent');
@@ -133,30 +134,5 @@ const handleDownload = () => {
   width: 36px;
   height: 36px;
   padding: 0;
-}
-
-.loading {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  animation: delayIn 0.3s forwards;
-
-  :deep(.el-loading-mask) {
-    background-color: transparent;
-  }
-}
-
-@keyframes delayIn {
-  0% {
-    visibility: hidden;
-  }
-  99% {
-    visibility: hidden;
-  }
-  100% {
-    visibility: visible;
-  }
 }
 </style>

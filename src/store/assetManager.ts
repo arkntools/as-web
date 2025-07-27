@@ -1,26 +1,44 @@
-import { proxy } from 'comlink';
-import { saveAs } from 'file-saver';
+import { proxy, transfer, wrap } from 'comlink';
 import { defineStore } from 'pinia';
-import { computed, ref } from 'vue';
-import { getDateString } from '@/utils/date';
 import { showNotingCanBeExportToast } from '@/utils/toasts';
 import type { AssetInfo, ExportAssetsOnProgress, FileLoadingOnProgress } from '@/workers/assetManager';
+import AssetManagerWorker from '@/workers/assetManager/index.js?worker';
 import { useProgress } from './progress';
-import type { ProgressData } from './progress';
 import { useSetting } from './setting';
 
-const worker = new ComlinkWorker<typeof import('@/workers/assetManager')>(
-  new URL('../workers/assetManager.js', import.meta.url),
+const { AssetManager } = wrap<typeof import('@/workers/assetManager')>(new AssetManagerWorker());
+
+AssetManager.setFsbToMp3(
+  proxy(async params => {
+    const { convertFsb, FsbConvertFormat } = await import('@arkntools/unity-js/audio');
+    const data = await convertFsb(params, FsbConvertFormat.MP3);
+    return transfer(data, [data.buffer]);
+  }),
 );
-const manager = new worker.AssetManager();
+
+const manager = new AssetManager();
+
+const pickExportDir = () => window.showDirectoryPicker({ id: 'export-assets', mode: 'readwrite' }).catch(console.error);
+
+const showExportResultMessage = (
+  { success, skip, error }: { success: number; skip: number; error: number } = { success: 0, skip: 0, error: 0 },
+) => {
+  const parts: string[] = [`Exported ${success} file${success > 1 ? 's' : ''}`];
+  if (skip) parts.push(`skipped ${skip}`);
+  if (error) parts.push(`failed ${error}`);
+  ElMessage({
+    message: parts.join(', '),
+    type: success ? 'success' : skip ? 'warning' : error ? 'error' : 'info',
+  });
+};
 
 export const useAssetManager = defineStore('assetManager', () => {
   const progressStore = useProgress();
   const setting = useSetting();
 
-  const assetInfos = ref<AssetInfo[]>([]);
+  const assetInfos = shallowRef<AssetInfo[]>([]);
+  const curAssetInfo = shallowRef<AssetInfo>();
   const isLoading = ref(false);
-  const curAssetInfo = ref<AssetInfo>();
 
   const assetInfoMap = computed(() => new Map(assetInfos.value.map(info => [info.key, info])));
 
@@ -47,9 +65,6 @@ export const useAssetManager = defineStore('assetManager', () => {
         },
         onProgress,
       );
-      infos.forEach(({ dump }) => {
-        markRaw(dump);
-      });
       if (infos.length) {
         assetInfos.value = infos;
         curAssetInfo.value = undefined;
@@ -82,84 +97,56 @@ export const useAssetManager = defineStore('assetManager', () => {
     await (await manager).clear();
   };
 
-  const loadImage = async ({ key, fileId, pathId }: Pick<AssetInfo, 'key' | 'fileId' | 'pathId'>, subKey?: string) => {
-    const img = await (await manager).getImageUrl(fileId, pathId, subKey);
-    const data = assetInfoMap.value.get(key)?.data;
-    if (!data) return;
-    switch (data.type) {
-      case 'image':
-        data.url = img;
-        return;
-      case 'imageList':
-        if (!subKey) return;
-        const item = data.list.find(item => item.key === subKey);
-        if (item) item.url = img;
-        return;
-    }
-  };
+  const loadPreviewData = async ({ fileId, pathId }: Pick<AssetInfo, 'fileId' | 'pathId'>, payload?: any) =>
+    (await manager).getPreviewData(fileId, pathId, payload);
 
   const setCurAssetInfo = (info: AssetInfo) => {
     curAssetInfo.value = info;
   };
 
-  const exportAsset = async ({ name, fileId, pathId, canExport }: AssetInfo) => {
+  const exportAsset = async ({ fileId, pathId, canExport }: AssetInfo) => {
     if (!canExport) {
       showNotingCanBeExportToast();
       return;
     }
-    const file = await (await manager).exportAsset(fileId, pathId);
-    if (!file) {
-      ElMessage({
-        message: `Export ${name} failed`,
-        type: 'error',
-        grouping: true,
-      });
-      return;
-    }
-    saveAs(new Blob([file.data], { type: file.type }), file.name);
+    const handle = await pickExportDir();
+    if (!handle) return;
+    showExportResultMessage(await (await manager).exportAsset(handle, fileId, pathId));
   };
 
   const isBatchExporting = ref(false);
 
-  const batchExportOnProgress = proxy<ExportAssetsOnProgress>(({ type, percent, name }) => {
-    const data: Partial<ProgressData> = {};
-    switch (type) {
-      case 'exportPreparing':
-        data.value = percent * 0.45;
-        data.desc = `Preparing ${name}`;
-        break;
-      case 'exportAsset':
-        data.value = 45 + percent * 0.5;
-        data.desc = `Exporting ${name}`;
-        break;
-      case 'exportZip':
-        data.value = 95 + percent * 0.05;
-        data.desc = `Packing ${name}`;
-        break;
-    }
-    progressStore.setProgress(data);
+  const batchExportOnProgress = proxy<ExportAssetsOnProgress>(({ progress, name }) => {
+    progressStore.setProgress({
+      value: progress * 100,
+      desc: `Exporting ${name}`,
+    });
   });
 
   const batchExportAsset = async (infos: AssetInfo[]) => {
     if (isBatchExporting.value) return;
     isBatchExporting.value = true;
-    progressStore.setProgress({
-      type: 'export',
-      desc: 'Preparing',
-    });
     try {
-      const zip = await (
-        await manager
-      ).exportAssets(
-        infos.map(({ fileId, pathId, fileName, container }) => ({ fileId, pathId, fileName, container })),
-        { groupMethod: setting.data.exportGroupMethod },
-        batchExportOnProgress,
+      const handle = await pickExportDir();
+      if (!handle) return;
+      progressStore.setProgress({
+        type: 'exporting',
+        desc: 'Exporting',
+      });
+      showExportResultMessage(
+        await (
+          await manager
+        ).exportAssets(
+          handle,
+          infos.map(({ fileId, pathId, fileName }) => ({ fileId, pathId, fileName })),
+          { groupMethod: setting.data.exportGroupMethod },
+          batchExportOnProgress,
+        ),
       );
       progressStore.setProgress({
         value: 100,
         desc: '',
       });
-      saveAs(new Blob([zip], { type: 'application/zip' }), `assets-export-${getDateString()}.zip`);
     } catch (error) {
       console.error(error);
     } finally {
@@ -185,7 +172,7 @@ export const useAssetManager = defineStore('assetManager', () => {
     isBatchExporting,
     loadFiles,
     clearFiles,
-    loadImage,
+    loadPreviewData,
     setCurAssetInfo,
     exportAsset,
     batchExportAsset,

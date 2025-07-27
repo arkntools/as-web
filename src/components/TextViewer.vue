@@ -1,5 +1,5 @@
 <template>
-  <VueMonacoEditor :value="data || ''" :options="options" :language="language" />
+  <VueMonacoEditor :value="value || ''" :options="options" :language="language" />
 </template>
 
 <script setup lang="ts">
@@ -9,11 +9,11 @@ import isJson from 'is-json';
 import type { editor } from 'monaco-editor/esm/vs/editor/editor.api';
 
 const props = defineProps<{
-  data: string;
+  value: string;
   isJson?: boolean;
 }>();
 
-const language = computed(() => (props.isJson || isJson(props.data) ? 'json' : undefined));
+const language = computed(() => (props.isJson || isJson(props.value) ? 'json' : undefined));
 
 const options: editor.IStandaloneEditorConstructionOptions = {
   readOnly: true,

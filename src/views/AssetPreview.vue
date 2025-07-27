@@ -8,9 +8,10 @@
         <component
           :is="PreviewComponent"
           :asset="assetManager.curAssetInfo!"
+          :data="previewData"
           :desc="enablePreview ? undefined : 'Preview disabled'"
-          @load-image="assetManager.loadImage"
           @goto-asset="(pathId: any) => emits('gotoAsset', pathId)"
+          @update-payload="(payload: any) => (previewPayload = payload)"
         />
       </KeepAlive>
     </div>
@@ -18,14 +19,17 @@
 </template>
 
 <script setup lang="ts">
-import AssetDumpViewer from '@/components/AssetInspectViewer.vue';
+import { computedAsync } from '@vueuse/core';
+import AssetAudioViewer from '@/components/AssetAudioViewer.vue';
 import AssetImageViewer from '@/components/AssetImageViewer.vue';
+import AssetDumpViewer from '@/components/AssetInspectViewer.vue';
 import AssetNoPreview from '@/components/AssetNoPreview.vue';
+import AssetSpineViewer from '@/components/AssetSpineViewerAsync';
 import AssetTextViewer from '@/components/AssetTextViewer.vue';
 import AssetTypeTreeViewer from '@/components/AssetTypeTreeViewer.vue';
 import { useAssetManager } from '@/store/assetManager';
 import { useSetting } from '@/store/setting';
-import type { AssetInfoData } from '@/workers/assetManager';
+import { PreviewType } from '@/types/preview';
 
 const emits = defineEmits<{
   (e: 'gotoAsset', pathId: bigint): void;
@@ -35,28 +39,71 @@ const assetManager = useAssetManager();
 const setting = useSetting();
 
 const activePane = ref('preview');
-
 const enablePreview = computed(() => setting.data.enablePreview);
 
-const isTextData = (data: AssetInfoData) => data.type === 'text';
-const isImageData = (data: AssetInfoData) => data.type === 'image' || (data.type === 'imageList' && !!data.list.length);
+const previewPayload = shallowRef<any>();
+const previewDataLoading = ref(false);
+
+watch(
+  () => assetManager.curAssetInfo,
+  () => {
+    previewPayload.value = undefined;
+    previewDataLoading.value = true;
+  },
+  { flush: 'sync' },
+);
+
+const previewDataAsync = computedAsync(
+  async () => {
+    if (!enablePreview.value) return null;
+    const info = assetManager.curAssetInfo;
+    if (!info) return null;
+    const {
+      fileId,
+      pathId,
+      preview: { type },
+    } = info;
+    if (type === PreviewType.None || (type === PreviewType.ImageList && !previewPayload.value)) return null;
+    const data = await assetManager.loadPreviewData(
+      { fileId, pathId },
+      type === PreviewType.ImageList ? previewPayload.value : undefined,
+    );
+    return data ?? null;
+  },
+  null,
+  {
+    evaluating: previewDataLoading,
+  },
+);
+
+const previewData = computed(() => (previewDataLoading.value ? null : previewDataAsync.value));
 
 const PreviewComponent = computed(() => {
   const info = assetManager.curAssetInfo;
   if (!info) return AssetNoPreview;
   switch (activePane.value) {
-    case 'preview':
-      const data = info.data;
-      if (!enablePreview.value || !data) return AssetNoPreview;
-      if (isImageData(data)) return AssetImageViewer;
-      if (isTextData(data)) return AssetTextViewer;
-      return AssetNoPreview;
+    case 'preview': {
+      switch (info.preview.type) {
+        case PreviewType.Image:
+        case PreviewType.ImageList:
+          return AssetImageViewer;
+        case PreviewType.Text:
+          return AssetTextViewer;
+        case PreviewType.Audio:
+          return AssetAudioViewer;
+        case PreviewType.Spine:
+          return AssetSpineViewer;
+        default:
+          return AssetNoPreview;
+      }
+    }
     case 'typeTree':
       return AssetTypeTreeViewer;
     case 'inspect':
       return AssetDumpViewer;
+    default:
+      return AssetNoPreview;
   }
-  return AssetNoPreview;
 });
 </script>
 

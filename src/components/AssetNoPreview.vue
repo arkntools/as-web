@@ -3,5 +3,9 @@
 </template>
 
 <script setup lang="ts">
-withDefaults(defineProps<{ desc: string }>(), { desc: 'No preview' });
+const { desc = 'No preview' } = defineProps<{
+  asset: any;
+  data: string | null;
+  desc?: string;
+}>();
 </script>

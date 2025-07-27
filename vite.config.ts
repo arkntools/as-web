@@ -8,7 +8,7 @@ import Icons from 'unplugin-icons/vite';
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers';
 import Components from 'unplugin-vue-components/vite';
 import { defineConfig } from 'vite';
-import { comlink } from 'vite-plugin-comlink';
+import { nodePolyfills } from 'vite-plugin-node-polyfills';
 import { VitePWA } from 'vite-plugin-pwa';
 import SvgLoader from 'vite-svg-loader';
 
@@ -16,9 +16,6 @@ const pathSrc = resolve(__dirname, 'src');
 
 // https://vitejs.dev/config/
 export default defineConfig(({ command }) => ({
-  build: {
-    sourcemap: true,
-  },
   plugins: [
     VitePWA({
       registerType: 'prompt',
@@ -45,7 +42,6 @@ export default defineConfig(({ command }) => ({
         ],
       },
     }),
-    comlink(),
     Vue(),
     SvgLoader(),
     AutoImport({
@@ -70,13 +66,28 @@ export default defineConfig(({ command }) => ({
       dts: command === 'serve' ? resolve(pathSrc, 'components.d.ts') : false,
     }),
     Icons(),
+    nodePolyfills({
+      include: ['buffer', 'fs', 'path', 'crypto'],
+      globals: {
+        Buffer: true,
+      },
+      overrides: {
+        fs: 'empty-module',
+        path: 'empty-module',
+        crypto: 'empty-module',
+      },
+    }),
   ],
   worker: {
-    plugins: () => [comlink()],
+    format: 'es',
   },
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
+      'lodash-es': 'es-toolkit/compat',
     },
+  },
+  optimizeDeps: {
+    exclude: ['@jimp/wasm-png'],
   },
 }));

@@ -22,7 +22,12 @@
         <div class="dump">
           <span class="key" :class="{ ellipsis: rowIndex === 0 }">{{ row.name }}</span>
           <span class="colon">:&nbsp;</span>
-          <span class="value" :class="{ [row.type]: true, ellipsis: rowIndex !== 0 }">{{ row.valueText }}</span>
+          <AutoTitle
+            class="value"
+            :class="{ [row.type]: true, ellipsis: rowIndex !== 0 }"
+            :text="row.valueText"
+            :resize-trigger="tableWidth"
+          />
           <el-icon
             v-if="row.isPPtr || rowIndex === 0"
             class="pptr-goto"
@@ -40,11 +45,13 @@
 </template>
 
 <script setup lang="ts">
+import { useElementSize } from '@vueuse/core';
 import { mapValues, omit } from 'es-toolkit';
 import { uid } from 'uid';
 import type { VxeTableEvents, VxeTableInstance, VxeTablePropTypes } from 'vxe-table';
 import { hasSelection } from '@/utils/common';
 import type { AssetInfo } from '@/workers/assetManager';
+import AutoTitle from './AutoTitle.vue';
 
 interface DumpRow {
   id: string;
@@ -56,8 +63,9 @@ interface DumpRow {
   isPPtr: boolean;
 }
 
-const props = defineProps<{
+const { asset } = defineProps<{
   asset: AssetInfo;
+  data: any;
 }>();
 
 const emits = defineEmits<{
@@ -65,6 +73,7 @@ const emits = defineEmits<{
 }>();
 
 const tableRef = ref<VxeTableInstance<DumpRow>>();
+const { width: tableWidth } = useElementSize(tableRef);
 
 const getDumpValueText = (className: string | undefined, type: string, value: any) => {
   if (className) return className;
@@ -116,7 +125,7 @@ const dumpToRows = (rows: DumpRow[], value: any, name: string, parentId?: string
 
 const dumpRows = computed(() => {
   const rows: DumpRow[] = [];
-  dumpToRows(rows, props.asset.dump, props.asset.name);
+  dumpToRows(rows, asset.preview.inspect, asset.name);
   return rows;
 });
 

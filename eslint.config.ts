@@ -12,6 +12,7 @@ export default antfu(
     },
     typescript: {
       overrides: {
+        'ts/ban-ts-comment': 'off',
         'ts/member-ordering': 'warn',
         'ts/explicit-member-accessibility': ['warn', { accessibility: 'no-public' }],
         'ts/consistent-type-imports': [
@@ -27,6 +28,7 @@ export default antfu(
     jsonc: false,
     yaml: false,
     markdown: false,
+    ignores: ['**/*.js'],
   },
   prettierConfig as Linter.Config,
   {
@@ -34,6 +36,7 @@ export default antfu(
       globals: autoImport.globals as any as Linter.Globals,
     },
     rules: {
+      'node/prefer-global/buffer': 'off',
       'antfu/consistent-list-newline': 'off',
       'style/semi': 'off',
       'style/member-delimiter-style': 'off',
@@ -65,6 +68,13 @@ export default antfu(
             'index',
             'object',
           ],
+        },
+      ],
+      'perfectionist/sort-exports': [
+        'warn',
+        {
+          ignoreCase: false,
+          partitionByNewLine: true,
         },
       ],
     },

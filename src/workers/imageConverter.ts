@@ -1,10 +1,12 @@
-import Jimp from '@arkntools/jimp-png';
 import type { ImgBitMap } from '@arkntools/unity-js';
-import { transfer } from 'comlink';
+import { expose, transfer } from 'comlink';
+import { Jimp } from '@/lib/jimp-png';
 
-export const toPNG = async ({ data, ...size }: ImgBitMap): Promise<ArrayBuffer> => {
-  const { buffer } = await new Jimp({ data: new Uint8Array(data), ...size })
-    .deflateStrategy(0)
-    .getBufferAsync(Jimp.MIME_PNG);
-  return transfer(buffer, [buffer]) as ArrayBuffer;
+export const toPNG = async ({ data, ...size }: ImgBitMap) => {
+  const img = await new Jimp({ data: Buffer.from(data), ...size });
+  const { buffer } = await img.getBuffer('image/png');
+  const uint8Array = new Uint8Array<ArrayBuffer>(buffer);
+  return transfer(uint8Array, [uint8Array.buffer]);
 };
+
+expose({ toPNG });

@@ -1,6 +1,5 @@
 # Auto detect text files and perform LF normalization
 * text=auto
-*.lockb binary diff=lockb
 
 # Auto generated files
 src/auto-imports.d.ts text eol=lf

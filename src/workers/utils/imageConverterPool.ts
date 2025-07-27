@@ -1,7 +1,11 @@
+import '@ungap/with-resolvers';
 import type { ImgBitMap } from '@arkntools/unity-js';
-import { transfer } from 'comlink';
+import { loopMap } from '@arkntools/unity-js/utils/loop';
+import { transfer, wrap } from 'comlink';
+import type { Remote } from 'comlink';
 import Emitter from 'eventemitter3';
 import { uid } from 'uid';
+import ImageConverterWorker from '@/workers/imageConverter?worker';
 
 interface Task {
   id: string;
@@ -9,7 +13,7 @@ interface Task {
   bitmap: ImgBitMap;
 }
 
-type ImageConverter = typeof import('../imageConverter');
+type ImageConverter = typeof import('@/workers/imageConverter');
 
 interface Input {
   key: string;
@@ -18,7 +22,7 @@ interface Input {
 
 interface Output {
   key: string;
-  data: ArrayBuffer;
+  data: Uint8Array<ArrayBuffer>;
 }
 
 interface WorkerUnitEvents {
@@ -26,8 +30,8 @@ interface WorkerUnitEvents {
 }
 
 class ImageConverterThread {
-  private _worker!: InstanceType<typeof ComlinkWorker<ImageConverter>>;
   private isWorking = false;
+  #worker?: Remote<ImageConverter>;
 
   constructor(
     private readonly id: number,
@@ -36,10 +40,10 @@ class ImageConverterThread {
   ) {}
 
   private get worker() {
-    if (this._worker) return this._worker;
+    if (this.#worker) return this.#worker;
     console.debug('[ImageConverterThread] create thread', this.id);
-    const worker = new ComlinkWorker<ImageConverter>(new URL('../imageConverter.js', import.meta.url));
-    this._worker = worker;
+    const worker = wrap<ImageConverter>(new ImageConverterWorker());
+    this.#worker = worker;
     return worker;
   }
 
@@ -69,9 +73,22 @@ export class ImageConverterPool {
 
   constructor() {
     const threadNum = Math.max(navigator.hardwareConcurrency - 1, 1);
-    this.pool = Array.from({ length: threadNum }).map(
-      (_, i) => new ImageConverterThread(i, this.emitter, this.taskList),
-    );
+    this.pool = loopMap(threadNum, i => new ImageConverterThread(i, this.emitter, this.taskList));
+  }
+
+  addTask(bitmap: ImgBitMap): Promise<Uint8Array<ArrayBuffer>> {
+    const id = uid();
+    const tasks: Task[] = [{ id, key: '', bitmap }];
+    const { resolve, reject, promise } = Promise.withResolvers<Uint8Array<ArrayBuffer>>();
+    const handler = async (targetId: string, output?: Output) => {
+      if (targetId !== id) return;
+      this.emitter.off('done', handler);
+      if (output) resolve(output.data);
+      else reject(new Error('[ImageConverterPool] task failed'));
+    };
+    this.emitter.on('done', handler);
+    this.start(tasks);
+    return promise;
   }
 
   addTasks(inputs: Input[], callback: (output: Output) => any) {
@@ -82,10 +99,7 @@ export class ImageConverterPool {
       ids.add(id);
       return { id, ...input };
     });
-    let resolvePromise: () => void;
-    const promise = new Promise<void>(resolve => {
-      resolvePromise = resolve;
-    });
+    const { resolve, promise } = Promise.withResolvers<void>();
     const callbackPromises: any[] = [];
     const handler = async (id: string, output?: Output) => {
       if (!ids.has(id)) return;
@@ -94,7 +108,7 @@ export class ImageConverterPool {
       if (ids.size) return;
       this.emitter.off('done', handler);
       await Promise.allSettled(callbackPromises);
-      resolvePromise();
+      resolve();
     };
     this.emitter.on('done', handler);
     this.start(tasks);
@@ -108,3 +122,5 @@ export class ImageConverterPool {
     });
   }
 }
+
+export const imageConverterPool = new ImageConverterPool();

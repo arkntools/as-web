@@ -1,17 +1,14 @@
 <template>
-  <TextViewerAsync :data />
+  <TextViewerAsync :value />
 </template>
 
 <script setup lang="ts">
 import TextViewerAsync from './TextViewerAsync';
-import type { AssetInfo } from '@/workers/assetManager';
 
-const props = defineProps<{
-  asset: AssetInfo;
+const { data } = defineProps<{
+  asset: any;
+  data: string | null;
 }>();
 
-const data = computed(() => {
-  const assetData = props.asset.data;
-  return assetData?.type === 'text' ? assetData.data : '';
-});
+const value = computed(() => (typeof data === 'string' ? data : ''));
 </script>

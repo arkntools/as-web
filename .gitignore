@@ -1,6 +1,10 @@
 # Dev
 /src/assets/*.ab
 
+# Yalc
+.yalc
+yalc.lock
+
 # Logs
 logs
 *.log
