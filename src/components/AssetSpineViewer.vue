@@ -1,6 +1,6 @@
 <template>
   <div class="asset-spine-viewer">
-    <div class="player-container" ref="container"></div>
+    <div ref="container" class="player-container"></div>
     <div class="color-picker">
       <el-color-picker
         v-model="bgColor"
@@ -16,11 +16,11 @@
 
 <script setup lang="ts">
 import '@/lib/spine-player/index.css';
+import { useElementSize, useLocalStorage } from '@vueuse/core';
+import { groupBy } from 'es-toolkit';
+import isJson from 'is-json';
 import spine from '@/lib/spine-player';
 import type { SpineItem, SpineItemType } from '@/workers/assetManager/utils/cache';
-import { groupBy } from 'es-toolkit';
-import { useElementSize, useLocalStorage } from '@vueuse/core';
-import isJson from 'is-json';
 
 const { data } = defineProps<{
   asset: any;

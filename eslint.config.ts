@@ -28,7 +28,7 @@ export default antfu(
     jsonc: false,
     yaml: false,
     markdown: false,
-    ignores: ['**/*.js'],
+    ignores: ['**/*.js', 'src/lib/spine-player'],
   },
   prettierConfig as Linter.Config,
   {
