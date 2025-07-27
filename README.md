@@ -7,6 +7,11 @@ Currently supported (but not fully):
 - TextAsset
 - Texture2d
 - Sprite
+- SpriteAtlas
+- MonoBehaviour
+- MonoScript
+- AudioClip
+- Material
 
 ![preview](./docs/preview.png)
 
