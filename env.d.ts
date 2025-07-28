@@ -3,7 +3,3 @@
 /// <reference types="unplugin-icons/types/vue3" />
 /// <reference types="vite-svg-loader" />
 /// <reference types="@types/wicg-file-system-access" />
-
-declare module 'is-json' {
-  export default function (str: any): boolean;
-}

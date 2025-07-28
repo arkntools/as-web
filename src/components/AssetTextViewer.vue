@@ -3,7 +3,7 @@
 </template>
 
 <script setup lang="ts">
-import TextViewerAsync from './TextViewerAsync';
+import { TextViewerAsync } from './TextViewer';
 
 const { data } = defineProps<{
   asset: any;

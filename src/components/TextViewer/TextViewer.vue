@@ -5,7 +5,7 @@
 <script setup lang="ts">
 import '@/setup/monacoEditor';
 import { VueMonacoEditor } from '@guolao/vue-monaco-editor';
-import isJson from 'is-json';
+import { isJSON } from 'es-toolkit';
 import type { editor } from 'monaco-editor/esm/vs/editor/editor.api';
 
 const props = defineProps<{
@@ -13,7 +13,7 @@ const props = defineProps<{
   isJson?: boolean;
 }>();
 
-const language = computed(() => (props.isJson || isJson(props.value) ? 'json' : undefined));
+const language = computed(() => (props.isJson || isJSON(props.value) ? 'json' : undefined));
 
 const options: editor.IStandaloneEditorConstructionOptions = {
   readOnly: true,

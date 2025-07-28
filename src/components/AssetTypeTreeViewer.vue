@@ -4,7 +4,7 @@
 
 <script setup lang="ts">
 import type { AssetInfo } from '@/workers/assetManager';
-import TextViewerAsync from './TextViewerAsync';
+import { TextViewerAsync } from './TextViewer';
 
 const { asset } = defineProps<{
   asset: AssetInfo;

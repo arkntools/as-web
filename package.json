@@ -28,7 +28,6 @@
     "es-toolkit": "^1.39.8",
     "eventemitter3": "^5.0.1",
     "file-saver": "^2.0.5",
-    "is-json": "^2.0.1",
     "js-md5": "^0.8.3",
     "monaco-editor": "^0.52.2",
     "pinia": "^3.0.3",

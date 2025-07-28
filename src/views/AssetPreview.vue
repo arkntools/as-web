@@ -24,7 +24,7 @@ import AssetAudioViewer from '@/components/AssetAudioViewer.vue';
 import AssetImageViewer from '@/components/AssetImageViewer.vue';
 import AssetDumpViewer from '@/components/AssetInspectViewer.vue';
 import AssetNoPreview from '@/components/AssetNoPreview.vue';
-import AssetSpineViewer from '@/components/AssetSpineViewerAsync';
+import AssetSpineViewer from '@/components/AssetSpineViewer.vue';
 import AssetTextViewer from '@/components/AssetTextViewer.vue';
 import AssetTypeTreeViewer from '@/components/AssetTypeTreeViewer.vue';
 import { useAssetManager } from '@/store/assetManager';
