@@ -1,8 +1,8 @@
 <template>
   <el-tabs v-model="activePane" class="asset-preview" type="border-card">
-    <el-tab-pane label="Preview" name="preview" />
-    <el-tab-pane label="Type tree" name="typeTree" />
-    <el-tab-pane label="Inspect" name="inspect" />
+    <el-tab-pane v-if="enablePreview" label="Preview" :name="PreviewTab.Preview" />
+    <el-tab-pane label="Type tree" :name="PreviewTab.TypeTree" />
+    <el-tab-pane label="Inspect" :name="PreviewTab.Inspect" />
     <div class="asset-preview-pane">
       <KeepAlive :exclude="['AssetTextViewer', 'AssetTypeTreeViewer']">
         <component
@@ -35,11 +35,17 @@ const emits = defineEmits<{
   (e: 'gotoAsset', pathId: bigint): void;
 }>();
 
+enum PreviewTab {
+  Preview = 'preview',
+  TypeTree = 'typeTree',
+  Inspect = 'inspect',
+}
+
 const assetManager = useAssetManager();
 const setting = useSetting();
 
-const activePane = ref('preview');
 const enablePreview = computed(() => setting.data.enablePreview);
+const activePane = ref(enablePreview.value ? PreviewTab.Preview : PreviewTab.TypeTree);
 
 const previewPayload = shallowRef<any>();
 const previewDataLoading = ref(false);
@@ -52,6 +58,14 @@ watch(
   },
   { flush: 'sync' },
 );
+
+watch(enablePreview, v => {
+  activePane.value = v
+    ? PreviewTab.Preview
+    : activePane.value === PreviewTab.Preview
+      ? PreviewTab.TypeTree
+      : activePane.value;
+});
 
 const previewDataAsync = computedAsync(
   async () => {
