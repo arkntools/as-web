@@ -127,11 +127,11 @@ export class MonoBehaviourLoader extends AssetLoader<MonoBehaviour> {
 
     return await Promise.all(
       Object.entries(spine).flatMap(([type, data]) =>
-        (Object.entries(data) as [SpineItemType, ArrayBuffer | ImgBitMap][]).map(async ([name, buffer]) => {
+        (Object.entries(data) as [SpineItemType, BlobPart | ImgBitMap][]).map(async ([name, buffer]) => {
           if (type === SpineItemType.Image) {
             buffer = await imageConverterPool.addTask(buffer as ImgBitMap);
           }
-          const blob = new Blob([buffer as ArrayBuffer], {
+          const blob = new Blob([buffer as BlobPart], {
             type: type === SpineItemType.Image ? 'image/png' : 'text/plain',
           });
           return {

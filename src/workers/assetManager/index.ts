@@ -208,12 +208,10 @@ export class AssetManager {
   private createWriteFileErrorHandler() {
     const errorHandler = (e: unknown, item: AssetExportItem) => {
       if (e instanceof FsaError && e.code === FsaErrorCode.EEXIST) {
-        // eslint-disable-next-line ts/no-use-before-define
         ret.errorStat.skip++;
         console.warn(`[AssetManager] file ${item.name} already exists, skip`);
         return;
       }
-      // eslint-disable-next-line ts/no-use-before-define
       ret.errorStat.error++;
       console.error(`[AssetManager] failed to export ${item.name}`);
       console.error(e);

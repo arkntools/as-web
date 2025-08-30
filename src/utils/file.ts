@@ -17,7 +17,6 @@ const getFilesFromFileSystemEntry = (entry: FileSystemEntry) => {
     const dirReader = entry.createReader();
     return new Promise<File[]>(resolve => {
       dirReader.readEntries(
-        // eslint-disable-next-line ts/no-use-before-define
         entries => resolve(getFilesFromFileSystemEntries(entries)),
         e => {
           console.error(e);
