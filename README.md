@@ -4,7 +4,13 @@ This is a web application similar to [AssetStudio](https://github.com/Perfare/As
 
 The parsing of AssetBundle is implemented by [arkntools/unity-js](https://github.com/arkntools/unity-js). For details, please refer to that project.
 
-![preview](./docs/preview.png)
+For the repository feature, please check the [wiki](https://github.com/arkntools/as-web/wiki/Repository).
+
+|         Image         |         Text          |
+| :-------------------: | :-------------------: |
+| ![](./docs/image.png) | ![](./docs/text.png)  |
+|         Spine         |         Voice         |
+| ![](./docs/spine.png) | ![](./docs/voice.png) |
 
 ## Development
 
