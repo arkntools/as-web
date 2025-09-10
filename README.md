@@ -6,11 +6,11 @@ The parsing of AssetBundle is implemented by [arkntools/unity-js](https://github
 
 For the repository feature, please check the [wiki](https://github.com/arkntools/as-web/wiki/Repository).
 
-|         Image         |         Text          |
-| :-------------------: | :-------------------: |
-| ![](./docs/image.png) | ![](./docs/text.png)  |
-|         Spine         |         Voice         |
-| ![](./docs/spine.png) | ![](./docs/voice.png) |
+|                     **Image**                      |                      **Text**                      |
+| :------------------------------------------------: | :------------------------------------------------: |
+| [![](./docs/image.png)](./docs/image.png?raw=true) |  [![](./docs/text.png)](./docs/text.png?raw=true)  |
+|                     **Spine**                      |                     **Voice**                      |
+| [![](./docs/spine.png)](./docs/spine.png?raw=true) | [![](./docs/voice.png)](./docs/voice.png?raw=true) |
 
 ## Development
 
