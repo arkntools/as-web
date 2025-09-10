@@ -43,7 +43,7 @@
         @cell-menu="handleCellMenu"
         @cell-dblclick="handleCellDblclick"
       >
-        <vxe-column field="name" title="Name" fixed="left" sortable>
+        <vxe-column field="name" title="Name" fixed="left" sortable :sort-by="sortNameMethod">
           <template #default="{ row }">
             <div class="resource-list-table__cell-name">
               <div class="res-name">{{ row.name }}</div>
@@ -65,8 +65,9 @@
 import type { ResourceItem } from '@arkntools/as-web-repo';
 import IElSearch from '~icons/ep/search';
 import { saveAs } from 'file-saver';
-import type { VxeTableEvents, VxeTableInstance, VxeTablePropTypes } from 'vxe-table';
+import type { VxeColumnPropTypes, VxeTableEvents, VxeTableInstance, VxeTablePropTypes } from 'vxe-table';
 import ResourceFetchProgress from '@/components/ResourceFetchProgress.vue';
+import { useNatsort } from '@/hooks/useNatsort';
 import { useRefDebouncedConditional } from '@/hooks/useRef';
 import { useAssetManager } from '@/store/assetManager';
 import { useRepository } from '@/store/repository';
@@ -90,6 +91,9 @@ const searchedResList = computed(() => {
   if (!searchText) return repoManager.resList;
   return repoManager.resList.filter(({ name }) => name.toLowerCase().includes(searchText));
 });
+
+const getResNameSortIndex = useNatsort(() => repoManager.resList.map(({ name }) => name));
+const sortNameMethod: VxeColumnPropTypes.SortBy<ResourceItem> = ({ row }) => getResNameSortIndex(row.name);
 
 const menuConfig: VxeTablePropTypes.MenuConfig<ResourceItem> = reactive({
   header: getMenuHeaderConfig(),

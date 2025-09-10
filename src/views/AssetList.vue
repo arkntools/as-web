@@ -55,7 +55,7 @@
           header-class-name="cell-overflow-visible"
           class-name="cell-overflow-visible"
         />
-        <vxe-column field="name" title="Name" fixed="left" :min-width="120" sortable />
+        <vxe-column field="name" title="Name" fixed="left" :min-width="120" sortable :sort-by="sortNameMethod" />
         <vxe-column field="container" title="Container" :min-width="60" sortable />
         <vxe-column field="type" title="Type" :width="110" sortable :filters="typeFilterOptions" />
         <vxe-column field="pathId" title="PathID" :min-width="60" />
@@ -92,7 +92,8 @@
 
 <script setup lang="ts">
 import IElSearch from '~icons/ep/search';
-import type { VxeTableEvents, VxeTableInstance, VxeTablePropTypes } from 'vxe-table';
+import type { VxeColumnPropTypes, VxeTableEvents, VxeTableInstance, VxeTablePropTypes } from 'vxe-table';
+import { useNatsort } from '@/hooks/useNatsort';
 import { useRefDebouncedConditional } from '@/hooks/useRef';
 import { useAssetManager } from '@/store/assetManager';
 import { useSetting } from '@/store/setting';
@@ -136,6 +137,9 @@ const searchedAssetInfos = computed(() => {
   if (!searchText) return filteredAssetInfos.value;
   return filteredAssetInfos.value.filter(({ search }) => search.includes(searchText));
 });
+
+const getAssetNameSortIndex = useNatsort(() => store.assetInfos.map(({ name }) => name));
+const sortNameMethod: VxeColumnPropTypes.SortBy<AssetInfo> = ({ row }) => getAssetNameSortIndex(row.name);
 
 const isMultiSelect = ref(false);
 const multiSelectRows = shallowRef<AssetInfo[]>([]);

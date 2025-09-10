@@ -33,6 +33,7 @@
     "idb-keyval": "^6.2.2",
     "js-md5": "^0.8.3",
     "monaco-editor": "^0.52.2",
+    "natsort": "^2.0.3",
     "pinia": "^3.0.3",
     "splitpanes": "^3.2.0",
     "uid": "^2.0.2",
