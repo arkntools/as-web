@@ -1,8 +1,8 @@
-import { available } from '@arkntools/as-web-repo';
 import type { RepositoryItem, ResourceItem } from '@arkntools/as-web-repo';
 import { computedAsync, useLocalStorage } from '@vueuse/core';
 import { pull, retry } from 'es-toolkit';
 import { defineStore } from 'pinia';
+import { useRepoAvailable } from '@/hooks/useRepoAvailable';
 import { IdbKV } from '@/utils/idbKV';
 
 export interface RepositorySource {
@@ -16,6 +16,8 @@ const loadRepo = async (source: string): Promise<RepositoryItem[]> => {
 };
 
 export const useRepository = defineStore('repository', () => {
+  const { available } = useRepoAvailable();
+
   const resVerCache = new IdbKV<string>('as-web-repo-res-ver-cache');
   const resListCache = new IdbKV<ResourceItem[]>('as-web-repo-res-list-cache');
   const resCache = new IdbKV<Blob>('as-web-repo-res-cache');
@@ -38,7 +40,7 @@ export const useRepository = defineStore('repository', () => {
   const resProgressMap = reactive(new Map<string | number, number>());
 
   const selectingSource = computed(() => loadingSource.value || curSource.value);
-  const showRepoPanel = computed(() => Boolean(available && selectingSource.value));
+  const showRepoPanel = computed(() => available.value && Boolean(selectingSource.value));
   const isLoading = computed(() => Boolean(loadingSource.value) || resListLoading.value);
 
   let curResVer: string | null = null;
