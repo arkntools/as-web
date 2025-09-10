@@ -7,6 +7,7 @@
     </MenuBar>
     <ExportOptionsDialog ref="exportOptionsDialogRef" />
     <UnityCNOptionsDialog ref="unityCNOptionsDialogRef" />
+    <AddRepoSourceDialog ref="addRepoSourceDialogRef" />
   </div>
 </template>
 
@@ -15,9 +16,11 @@ import { BundleEnv } from '@arkntools/unity-js';
 import { useFileDialog } from '@vueuse/core';
 import IElSelect from '~icons/ep/select';
 import IconGithub from '@/assets/github.svg';
+import AddRepoSourceDialog from '@/components/AddRepoSourceDialog.vue';
 import MenuBar from '@/components/MenuBar.vue';
 import type { MenuBarConfig } from '@/components/MenuBar.vue';
 import type { MenuDropdownConfigItem } from '@/components/MenuDropdown.vue';
+import { useRepoMenuItems } from '@/hooks/useRepoMenuItems';
 import { useAssetManager } from '@/store/assetManager';
 import { useSetting } from '@/store/setting';
 import ExportOptionsDialog from './components/ExportOptionsDialog.vue';
@@ -30,8 +33,9 @@ const emits = defineEmits<{
 const assetManager = useAssetManager();
 const setting = useSetting();
 
-const exportOptionsDialogRef = ref<InstanceType<typeof ExportOptionsDialog>>();
-const unityCNOptionsDialogRef = ref<InstanceType<typeof UnityCNOptionsDialog>>();
+const exportOptionsDialogRef = useTemplateRef('exportOptionsDialogRef');
+const unityCNOptionsDialogRef = useTemplateRef('unityCNOptionsDialogRef');
+const addRepoSourceDialogRef = useTemplateRef('addRepoSourceDialogRef');
 
 const gotoGithub = () => {
   window.open('https://github.com/arkntools/as-web', '_blank');
@@ -60,6 +64,8 @@ const getEnvMenuItem = (
   },
   icon: () => (setting.data.unityEnv === value ? IElSelect : undefined),
 });
+
+const { repoMenuItems } = useRepoMenuItems({ dialogRef: addRepoSourceDialogRef as any });
 
 const menuConfig = markRaw<MenuBarConfig>([
   {
@@ -134,6 +140,11 @@ const menuConfig = markRaw<MenuBarConfig>([
         disabled: () => !(assetManager.assetInfos.length && assetManager.curAssetInfo),
       },
     ],
+  },
+  {
+    name: 'Repository',
+    icon: true,
+    items: repoMenuItems,
   },
 ]);
 </script>

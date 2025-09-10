@@ -19,6 +19,7 @@
         "es-toolkit": "^1.39.10",
         "eventemitter3": "^5.0.1",
         "file-saver": "^2.0.5",
+        "idb-keyval": "^6.2.2",
         "js-md5": "^0.8.3",
         "monaco-editor": "^0.52.2",
         "pinia": "^3.0.3",
@@ -29,6 +30,7 @@
       },
       "devDependencies": {
         "@antfu/eslint-config": "^5.2.2",
+        "@arkntools/as-web-repo": "^1.0.0",
         "@tsconfig/node20": "^20.1.6",
         "@tsuk1ko/eslint-config": "^1.0.2",
         "@types/file-saver": "^2.0.7",
@@ -68,6 +70,8 @@
 
     "@apideck/better-ajv-errors": ["@apideck/better-ajv-errors@0.3.6", "", { "dependencies": { "json-schema": "^0.4.0", "jsonpointer": "^5.0.0", "leven": "^3.1.0" }, "peerDependencies": { "ajv": ">=8" } }, "sha512-P+ZygBLZtkp0qqOAJJVX4oX/sFo5JR3eBWwwuqHHhK0GIgQOKWrAfiAaWX0aArHkRWHMuggFEgAZNxVPwPZYaA=="],
 
+    "@arkntools/as-web-repo": ["@arkntools/as-web-repo@1.0.0", "", { "dependencies": { "@arkntools/userscript-extension": "^1.0.0" } }, "sha512-lJCVt/RI0Po55vKMXwFOlrrm3F9dllpd4LMUSN+/V/NLrSieYM/N0scmONcnnhvONtMNOmlKPaLpM59zZNFZdw=="],
+
     "@arkntools/fmod": ["@arkntools/fmod@1.0.4", "", {}, "sha512-Xs084PhEePqbWneBAxGHrgIJ6DZujUjmMpFX9+S6F25MxZQ+DrdkM3NNPowk3pESxli6kUohbnHD3fSRdk1nvw=="],
 
     "@arkntools/lame-wasm": ["@arkntools/lame-wasm@1.0.2", "", {}, "sha512-N3QENyQYAy0I/4QjbknIg2lLYcWlSvQu6zx/jUmsEGNxME+oUoQR9DehDVdDaEyo2yX2Y3lpmCrqom3TAv0d5w=="],
@@ -77,6 +81,8 @@
     "@arkntools/unity-js-tools": ["@arkntools/unity-js-tools@3.2.0", "", { "dependencies": { "@arkntools/unity-js-tools-wasm": "3.2.0" } }, "sha512-FzWRWQF+bicVwYAa+LTmyXjlxZ4U+Bf4NCvg/X9JspEwRD7TXCcTeL2Rn2ZQGVkDa24rDIPnfd1gYHfMuY6CPQ=="],
 
     "@arkntools/unity-js-tools-wasm": ["@arkntools/unity-js-tools-wasm@3.2.0", "", {}, "sha512-g3UateFLIcoF6cbaFxEMUf9Jfrvp3DgIKHx7xWA1LlSQEBem2xPQjMR58n1DIY0v3Fmx/8X7K806ufjlC/Q5zg=="],
+
+    "@arkntools/userscript-extension": ["@arkntools/userscript-extension@1.0.0", "", {}, "sha512-HCLPuVuiWmCDGzMbLj2GVcLBO0o/J+oFxwwINLVcCM7gszlmWSQtMu2j08wVy821Gw9jhpF/rHQT0fr03KMBHA=="],
 
     "@babel/code-frame": ["@babel/code-frame@7.27.1", "", { "dependencies": { "@babel/helper-validator-identifier": "^7.27.1", "js-tokens": "^4.0.0", "picocolors": "^1.1.1" } }, "sha512-cjQ7ZlQ0Mv3b47hABuTevyTuYN4i+loJKGeV9flcCgIK37cCXRh+L1bd3iBHlynerhQ7BhCkn2BPbQUL+rGqFg=="],
 
@@ -742,7 +748,7 @@
 
     "comlink": ["comlink@4.4.2", "", {}, "sha512-OxGdvBmJuNKSCMO4NTl1L47VRp6xn2wG4F/2hYzB6tiCb709otOxtEYCSvK80PtjODfXXZu8ds+Nw5kVCjqd2g=="],
 
-    "commander": ["commander@7.2.0", "", {}, "sha512-QrWXB+ZQSVPmIWIhtEO9H+gwHaMGYiF5ChvoJ+K9ZGHG/sVsa6yiesAD1GC/x46sET00Xlwo1u49RVVVzvcSkw=="],
+    "commander": ["commander@2.20.3", "", {}, "sha512-GpVkmM8vF2vQUkj2LvZmD35JxeJOLCwJ9cUkugyk2nuhbv3+mJvpLYYt+0+USMxE+oj+ey/lJEnhZw75x/OMcQ=="],
 
     "comment-parser": ["comment-parser@1.4.1", "", {}, "sha512-buhp5kePrmda3vhc5B9t7pUQXAb2Tnd0qgpkIhPhkHXxJpiPJ11H0ZEU0oBpJ2QztSbzG/ZxMj/CHsYJqRHmyg=="],
 
@@ -1063,6 +1069,8 @@
     "https-browserify": ["https-browserify@1.0.0", "", {}, "sha512-J+FkSdyD+0mA0N+81tMotaRMfSL9SGi+xpD3T6YApKsc3bGSXJlfXri3VyFOeYkfLRQisDk1W+jIFFKBeUBbBg=="],
 
     "idb": ["idb@7.1.1", "", {}, "sha512-gchesWBzyvGHRO9W8tzUWFDycow5gwjvFKfyV9FF32Y7F50yZMp7mP+T2mJIWFx49zicqyC4uefHM17o6xKIVQ=="],
+
+    "idb-keyval": ["idb-keyval@6.2.2", "", {}, "sha512-yjD9nARJ/jb1g+CvD0tlhUHOrJ9Sy0P8T9MF3YaLlHnSRpwPfpTX0XIvpmw3gAJUmEu3FiICLBDPXVwyEvrleg=="],
 
     "ieee754": ["ieee754@1.2.1", "", {}, "sha512-dcyqhDvX1C46lXZcVqCpK+FtMRQVdIMN6/Df5js2zouUsqG7I6sFxitIC+7KYK29KdXOLHdu9zL4sFnoVQnqaA=="],
 
@@ -2016,7 +2024,7 @@
 
     "source-map-support/source-map": ["source-map@0.6.1", "", {}, "sha512-UjgapumWlbMhkBgzT7Ykc5YXUT46F0iKu8SGXq0bcwP5dz/h0Plj6enJqjz1Zbq2l5WaqYnrVbwWOWMyF3F47g=="],
 
-    "terser/commander": ["commander@2.20.3", "", {}, "sha512-GpVkmM8vF2vQUkj2LvZmD35JxeJOLCwJ9cUkugyk2nuhbv3+mJvpLYYt+0+USMxE+oj+ey/lJEnhZw75x/OMcQ=="],
+    "svgo/commander": ["commander@7.2.0", "", {}, "sha512-QrWXB+ZQSVPmIWIhtEO9H+gwHaMGYiF5ChvoJ+K9ZGHG/sVsa6yiesAD1GC/x46sET00Xlwo1u49RVVVzvcSkw=="],
 
     "tinyglobby/fdir": ["fdir@6.4.6", "", { "peerDependencies": { "picomatch": "^3 || ^4" }, "optionalPeers": ["picomatch"] }, "sha512-hiFoqpyZcfNm1yc4u8oWCf9A2c4D3QjCrks3zmoVKVxpQRzmPNar1hUJcBG2RQHvEVGDN+Jm81ZheVLAQMK6+w=="],
 

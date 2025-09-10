@@ -54,12 +54,12 @@
           fixed="left"
           header-class-name="cell-overflow-visible"
           class-name="cell-overflow-visible"
-        ></vxe-column>
-        <vxe-column field="name" title="Name" fixed="left" :min-width="120" sortable></vxe-column>
-        <vxe-column field="container" title="Container" :min-width="60" sortable></vxe-column>
-        <vxe-column field="type" title="Type" :width="110" sortable :filters="typeFilterOptions"></vxe-column>
-        <vxe-column field="pathId" title="PathID" :min-width="60"></vxe-column>
-        <vxe-column field="size" title="Size" align="right" header-align="left" :width="80" sortable></vxe-column>
+        />
+        <vxe-column field="name" title="Name" fixed="left" :min-width="120" sortable />
+        <vxe-column field="container" title="Container" :min-width="60" sortable />
+        <vxe-column field="type" title="Type" :width="110" sortable :filters="typeFilterOptions" />
+        <vxe-column field="pathId" title="PathID" :min-width="60" />
+        <vxe-column field="size" title="Size" align="right" header-align="left" :width="80" sortable />
         <template #empty>
           <el-text :style="{ fontSize: '30px', color: 'var(--el-color-info-light-3)' }">
             {{ filteredAssetInfos.length ? 'No data' : 'Drop files here or click "File" menu to load files' }}
@@ -91,14 +91,15 @@
 </template>
 
 <script setup lang="ts">
-import { refDebounced } from '@vueuse/core';
 import IElSearch from '~icons/ep/search';
 import type { VxeTableEvents, VxeTableInstance, VxeTablePropTypes } from 'vxe-table';
+import { useRefDebouncedConditional } from '@/hooks/useRef';
 import { useAssetManager } from '@/store/assetManager';
 import { useSetting } from '@/store/setting';
 import { sleep } from '@/utils/common';
 import { getFilesFromDataTransferItems } from '@/utils/file';
 import { showNotingCanBeExportToast } from '@/utils/toasts';
+import { getMenuHeaderConfig, getVxeTableCommonTools, handleCommonMenu } from '@/utils/vxeTableCommon';
 import type { AssetInfo } from '@/workers/assetManager';
 import ProgressBar from './components/ProgressBar.vue';
 
@@ -125,11 +126,13 @@ const filteredAssetInfos = computed(() =>
   setting.data.hideNamelessAssets ? store.assetInfos.filter(({ name }) => name) : store.assetInfos,
 );
 
-const searchInput = ref('');
-const searchInputDebounced = refDebounced(searchInput, 200);
-const searchInputForComputed = computed(() => (searchInput.value ? searchInputDebounced.value : '').toLowerCase());
+const { source: searchInput, result: searchInputDebounced } = useRefDebouncedConditional({
+  initValue: '',
+  delay: 200,
+  condition: v => !!v,
+});
 const searchedAssetInfos = computed(() => {
-  const searchText = searchInputForComputed.value;
+  const searchText = searchInputDebounced.value.toLowerCase();
   if (!searchText) return filteredAssetInfos.value;
   return filteredAssetInfos.value.filter(({ search }) => search.includes(searchText));
 });
@@ -183,40 +186,16 @@ const setCurrentRow = (row: AssetInfo) => {
   store.setCurAssetInfo(row);
 };
 
-const switchColumnSort = (field: string) => {
-  const $table = tableRef.value;
-  if (!$table) return;
-  const [cur] = $table.getSortColumns();
-  if (!cur || cur.field !== field) {
-    $table.sort(field, 'asc');
-  } else if (cur.order === 'asc') {
-    $table.sort(field, 'desc');
-  } else {
-    $table.clearSort(field);
-  }
-};
-
 const typeFilterOptions = computed(() =>
   [...new Set(filteredAssetInfos.value.map(({ type }) => type)).values()]
     .sort()
     .map(value => ({ label: value, value })),
 );
 
+const { handleHeaderCellClick, menuConfigVisibleMethodProcessHeader } = getVxeTableCommonTools(tableRef);
+
 const menuConfig: VxeTablePropTypes.MenuConfig<AssetInfo> = reactive({
-  header: {
-    options: [
-      [{ code: 'hideColumn', name: 'Hide this column', prefixIcon: 'vxe-icon-eye-fill-close', disabled: false }],
-      [
-        { code: 'sortAsc', name: 'Sort asc', prefixIcon: '', visible: true, disabled: false },
-        { code: 'sortDesc', name: 'Sort ↓ desc', prefixIcon: '', visible: true, disabled: false },
-        { code: 'clearSort', name: 'Clear sort', visible: true, disabled: false },
-      ],
-      [
-        { code: 'resetResizable', name: 'Reset all widths', prefixIcon: 'vxe-icon-ellipsis-h' },
-        { code: 'resetVisible', name: 'Reset all visibility', prefixIcon: 'vxe-icon-eye-fill', disabled: false },
-      ],
-    ],
-  },
+  header: getMenuHeaderConfig(),
   body: {
     options: [
       [
@@ -226,51 +205,22 @@ const menuConfig: VxeTablePropTypes.MenuConfig<AssetInfo> = reactive({
       [{ code: 'multiselect', name: 'Multi select', prefixIcon: 'vxe-icon-square-checked' }],
     ],
   },
-  visibleMethod: ({ type, options, columns, column, row }) => {
+  visibleMethod: params => {
+    const { type, options, column, row } = params;
     if (type !== 'header') {
       if (isMultiSelect.value || !row) return false;
       options[0][1].disabled = !store.canExport(row);
       return true;
     }
     if (column?.type === 'checkbox') return false;
-    const sortOption = options[1];
-    if (column?.sortable) {
-      const [cur] = tableRef.value!.getSortColumns();
-      if (!cur || cur.field !== column.field) {
-        sortOption[0].disabled = false;
-        sortOption[1].disabled = false;
-        sortOption[2].disabled = !cur;
-      } else if (cur.order === 'asc') {
-        sortOption[0].disabled = true;
-        sortOption[1].disabled = false;
-        sortOption[2].disabled = false;
-      } else {
-        sortOption[0].disabled = false;
-        sortOption[1].disabled = true;
-        sortOption[2].disabled = false;
-      }
-      sortOption.forEach(item => {
-        item.visible = true;
-      });
-      const isNumber = typeof (store.assetInfos[0] as any)?.[column.field] === 'number';
-      sortOption[0].prefixIcon = isNumber ? 'vxe-icon-sort-numeric-asc' : 'vxe-icon-sort-alpha-asc';
-      sortOption[1].prefixIcon = isNumber ? 'vxe-icon-sort-numeric-desc' : 'vxe-icon-sort-alpha-desc';
-    } else {
-      sortOption.forEach(item => {
-        item.visible = false;
-      });
-    }
-    options[0][0].disabled = columns.length <= 1;
-    options[2][1].disabled = columns.length >= 5;
+    menuConfigVisibleMethodProcessHeader(params);
     return true;
   },
 });
 
-const handleMenu: VxeTableEvents.MenuClick<AssetInfo> = async ({ $table, menu, row, column }) => {
+const handleMenu: VxeTableEvents.MenuClick<AssetInfo> = async params => {
+  const { menu, row, $table } = params;
   switch (menu.code) {
-    case 'copy':
-      await navigator.clipboard.writeText(String((row as any)[column.field]));
-      break;
     case 'export':
       await store.exportAsset(row);
       break;
@@ -279,23 +229,8 @@ const handleMenu: VxeTableEvents.MenuClick<AssetInfo> = async ({ $table, menu, r
       await $table.setCheckboxRow(row, true);
       updateMultiSelectNum();
       break;
-    case 'hideColumn':
-      await $table.hideColumn(column);
-      break;
-    case 'sortAsc':
-      await $table.sort(column.field, 'asc');
-      break;
-    case 'sortDesc':
-      await $table.sort(column.field, 'desc');
-      break;
-    case 'clearSort':
-      await $table.clearSort(column.field);
-      break;
-    case 'resetResizable':
-      await $table.resetColumn({ resizable: true, visible: false });
-      break;
-    case 'resetVisible':
-      await $table.resetColumn({ resizable: false, visible: true });
+    default:
+      handleCommonMenu(params);
       break;
   }
 };
@@ -315,11 +250,6 @@ const handleCellMenu: VxeTableEvents.CellMenu<AssetInfo> = ({ row, $event }) => 
 const handleCurrentChange: VxeTableEvents.CurrentChange<AssetInfo> = ({ row }) => {
   lastAssetInfo = store.curAssetInfo;
   store.setCurAssetInfo(row);
-};
-
-const handleHeaderCellClick: VxeTableEvents.HeaderCellClick<AssetInfo> = ({ column, $event: { target } }) => {
-  if ((target as HTMLElement)?.tagName === 'I') return;
-  switchColumnSort(column.field);
 };
 
 const handleBatchExportSelected = () => {
@@ -439,13 +369,10 @@ defineExpose({
   }
 
   &-header {
+    --el-border-radius-base: 0;
     flex-shrink: 0;
     margin-bottom: -1px;
     z-index: 10;
-
-    :deep(.el-input__wrapper) {
-      border-radius: 0;
-    }
   }
 
   &-footer {

@@ -40,3 +40,5 @@ export const getFilesFromDataTransferItems = (items: DataTransferItem[]) => {
   });
   return getFilesFromFileSystemEntries(entries);
 };
+
+export const getLegalFileName = (name: string) => name.replace(/[/\\:*?"<>|]/g, '_');

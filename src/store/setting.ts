@@ -16,6 +16,7 @@ export const useSetting = defineStore('setting', () => {
       unityEnv: BundleEnv.ARKNIGHTS,
     },
     {
+      writeDefaults: false,
       mergeDefaults: (storageValue, defaults) => ({
         ...defaults,
         ...pick(storageValue, Object.keys(defaults) as any),

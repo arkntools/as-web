@@ -39,6 +39,7 @@ declare module 'vue' {
     IElDownload: typeof import('~icons/ep/download')['default']
     IElFullScreen: typeof import('~icons/ep/full-screen')['default']
     IElPromotion: typeof import('~icons/ep/promotion')['default']
+    IElSelect: typeof import('~icons/ep/select')['default']
     VxeColumn: typeof import('vxe-table/es/column/index.js')['VxeColumn']
     VxeTable: typeof import('vxe-table/es/table/index.js')['VxeTable']
   }

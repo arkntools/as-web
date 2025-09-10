@@ -53,6 +53,7 @@ export const useAssetManager = defineStore('assetManager', () => {
   });
 
   const loadFiles = async (files: File[]) => {
+    if (isLoading.value) return;
     isLoading.value = true;
     try {
       const { errors, infos, successNum } = await (

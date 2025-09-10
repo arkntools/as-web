@@ -5,6 +5,7 @@
     trigger="click"
     placement="bottom-start"
     :popper-options="popoverOptions"
+    :hide-on-click="false"
     @command="handleCommand"
     @visible-change="visible => (isOpen = visible)"
   >
@@ -14,13 +15,15 @@
     <template #dropdown>
       <el-dropdown-menu>
         <el-dropdown-item
-          v-for="(item, i) in config.items"
+          v-for="(item, i) in toValue(config.items)"
           :key="i"
           :command="i"
-          :disabled="item.disabled?.()"
+          :disabled="toValue(item.disabled)"
           :divided="item.divided"
           :icon="item.icon?.() || defaultIcon"
-          >{{ item.name }}</el-dropdown-item
+          :title="item.title"
+          :style="{ '--color': toValue(item.iconColor) }"
+          >{{ toValue(item.name) }}</el-dropdown-item
         >
       </el-dropdown-menu>
     </template>
@@ -29,20 +32,24 @@
 
 <script setup lang="ts">
 import type { ElDropdown, ElDropdownItem } from 'element-plus';
+import type { MaybeRefOrGetter } from 'vue';
 import { closeMenuExceptKey, hasMenuOpenKey } from '@/types/menuProvide';
 
 export interface MenuDropdownConfig {
   name: string;
   icon?: boolean;
-  items: MenuDropdownConfigItem[];
+  items: MaybeRefOrGetter<MenuDropdownConfigItem[]>;
 }
 
 export interface MenuDropdownConfigItem {
-  name: string;
+  name: MaybeRefOrGetter<string>;
   handler: () => any;
-  disabled?: () => boolean;
+  disabled?: MaybeRefOrGetter<boolean | undefined>;
   divided?: boolean;
+  keepShowOnClick?: MaybeRefOrGetter<boolean | undefined>;
+  title?: string;
   icon?: () => InstanceType<typeof ElDropdownItem>['icon'];
+  iconColor?: MaybeRefOrGetter<string | undefined>;
 }
 
 const props = defineProps<{
@@ -50,9 +57,9 @@ const props = defineProps<{
   config: MenuDropdownConfig;
 }>();
 
-const dropdownRef = ref<InstanceType<typeof ElDropdown>>();
+const dropdownRef = useTemplateRef('dropdownRef');
 
-const hanMenuOpen = inject(hasMenuOpenKey);
+const hasMenuOpen = inject(hasMenuOpenKey);
 const closeMenuExcept = inject(closeMenuExceptKey);
 
 const isOpen = ref(false);
@@ -60,11 +67,13 @@ const isOpen = ref(false);
 const defaultIcon = computed(() => (props.config.icon ? () => undefined : undefined));
 
 const handleCommand = (i: number) => {
-  props.config.items[i].handler();
+  const item = toValue(props.config.items)[i];
+  item.handler();
+  if (!toValue(item.keepShowOnClick)) dropdownRef.value?.handleClose();
 };
 
 const handleMouseEnter = () => {
-  if (hanMenuOpen?.()) {
+  if (hasMenuOpen?.()) {
     closeMenuExcept?.(props.index);
     dropdownRef.value?.handleOpen();
   }

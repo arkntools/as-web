@@ -1,9 +1,13 @@
+* {
+  box-sizing: border-box;
+}
+
 html,
 body {
   padding: 0;
   margin: 0;
   height: 100%;
-  overflow-y: hidden;
+  overflow: hidden;
   user-select: none;
 }
 
@@ -17,24 +21,6 @@ body {
   overflow: visible !important;
   > .vxe-cell {
     overflow: visible !important;
-  }
-}
-
-.splitpanes.default-theme {
-  .splitpanes__pane {
-    background-color: transparent;
-  }
-  $splitter: '.splitpanes--vertical > .splitpanes__splitter';
-  &#{$splitter},
-  & #{$splitter} {
-    width: 6px;
-    // border-right: 1px solid var(--el-border-color);
-    // border-left-color: rgb(232, 234, 236);
-    // margin-right: -1px;
-    margin-left: 0;
-    border: none;
-    background-color: var(--el-color-info-light-9);
-    z-index: 10;
   }
 }
 

@@ -47,7 +47,7 @@ const { data } = defineProps<{
   data: SpineItem<string>[] | null;
 }>();
 
-const bgColor = useLocalStorage('asset-spine-viewer-bg-color', '#00000000');
+const bgColor = useLocalStorage('asset-spine-viewer-bg-color', '#00000000', { writeDefaults: false });
 const scale = ref(1);
 
 const spine = computed(() => {

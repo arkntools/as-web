@@ -27,7 +27,7 @@ defineProps<{
 const settings = useLocalStorage(
   'asset-audio-viewer-settings',
   { autoPlay: false, loop: false },
-  { mergeDefaults: true },
+  { mergeDefaults: true, writeDefaults: false },
 );
 </script>
 
