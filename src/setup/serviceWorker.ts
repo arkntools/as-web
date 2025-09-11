@@ -10,6 +10,7 @@ const updateSW = registerSW({
       ElNotification.info({
         title: 'New update found!',
         message: 'Downloading...',
+        offset: 32,
       });
     });
   },
@@ -25,6 +26,7 @@ function showUpdateMessage() {
         handle.close();
       },
     }),
+    offset: 32,
     duration: 0,
     showClose: false,
   });
