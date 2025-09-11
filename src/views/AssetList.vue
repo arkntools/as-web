@@ -59,7 +59,11 @@
         <vxe-column field="container" title="Container" :min-width="60" sortable />
         <vxe-column field="type" title="Type" :width="110" sortable :filters="typeFilterOptions" />
         <vxe-column field="pathId" title="PathID" :min-width="60" />
-        <vxe-column field="size" title="Size" align="right" header-align="left" :width="80" sortable />
+        <vxe-column field="size" title="Size" align="right" header-align="left" :width="80" sortable>
+          <template #default="{ row }">
+            {{ formatSize(row.size) }}
+          </template>
+        </vxe-column>
         <template #empty>
           <el-text :style="{ fontSize: '30px', color: 'var(--el-color-info-light-3)' }">
             {{ filteredAssetInfos.length ? 'No data' : 'Drop files here or click "File" menu to load files' }}
@@ -99,6 +103,7 @@ import { useAssetManager } from '@/store/assetManager';
 import { useSetting } from '@/store/setting';
 import { sleep } from '@/utils/common';
 import { getFilesFromDataTransferItems } from '@/utils/file';
+import { formatSize } from '@/utils/formater';
 import { showNotingCanBeExportToast } from '@/utils/toasts';
 import { getMenuHeaderConfig, getVxeTableCommonTools, handleCommonMenu } from '@/utils/vxeTableCommon';
 import type { AssetInfo } from '@/workers/assetManager';

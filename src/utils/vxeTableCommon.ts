@@ -92,10 +92,10 @@ export const handleCommonMenu: VxeTableEvents.MenuClick = async ({ $table, menu,
       await $table.clearSort(column.field);
       break;
     case 'resetResizable':
-      await $table.resetColumn({ resizable: true, visible: false });
+      await $table.resetCustom({ resizable: true, visible: false });
       break;
     case 'resetVisible':
-      await $table.resetColumn({ resizable: false, visible: true });
+      await $table.resetCustom({ resizable: false, visible: true });
       break;
   }
 };

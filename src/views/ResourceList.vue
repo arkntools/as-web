@@ -51,8 +51,16 @@
             </div>
           </template>
         </vxe-column>
-        <vxe-column field="size" title="Size" :width="80" sortable />
-        <vxe-column field="abSize" title="AB Size" :width="80" :visible="false" sortable />
+        <vxe-column field="size" title="Size" align="right" :width="80" sortable>
+          <template #default="{ row }">
+            {{ formatSize(row.size) }}
+          </template>
+        </vxe-column>
+        <vxe-column field="abSize" title="AB Size" align="right" :width="80" sortable>
+          <template #default="{ row }">
+            {{ formatSize(row.abSize) }}
+          </template>
+        </vxe-column>
         <template #empty>
           <el-empty description="No data" />
         </template>
@@ -72,6 +80,7 @@ import { useRefDebouncedConditional } from '@/hooks/useRef';
 import { useAssetManager } from '@/store/assetManager';
 import { useRepository } from '@/store/repository';
 import { getLegalFileName } from '@/utils/file';
+import { formatSize } from '@/utils/formater';
 import { getMenuHeaderConfig, getVxeTableCommonTools, handleCommonMenu } from '@/utils/vxeTableCommon';
 
 const tableRef = useTemplateRef<VxeTableInstance>('tableRef');

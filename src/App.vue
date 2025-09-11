@@ -52,8 +52,8 @@ const storageOptions: UseStorageOptions<any> = {
   serializer: StorageSerializers.object,
 };
 
-const resourceListSize = wrapStorage(useLocalStorage('app-panel-size-resourceList', '20%', storageOptions));
-const assetListSize = wrapStorage(useLocalStorage('app-panel-size-assetList', '50%', storageOptions));
+const resourceListSize = wrapStorage(useLocalStorage('app-panel-size-resourceList', '25%', storageOptions));
+const assetListSize = wrapStorage(useLocalStorage('app-panel-size-assetList', '45%', storageOptions));
 const assetPreviewSize = wrapStorage(useLocalStorage('app-panel-size-assetPreview', '30%', storageOptions));
 </script>
 
