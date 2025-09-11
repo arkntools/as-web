@@ -32,7 +32,7 @@ export const useRepoMenuItems = ({ dialogRef }: { dialogRef: Ref<InstanceType<ty
         window.open('https://greasyfork.org/scripts/548700', '_blank');
       },
       icon: () => ifSelectIcon(available.value, IElWarnTriangleFilled),
-      iconColor: () => (available ? 'var(--el-color-success)' : 'var(--el-color-warning)'),
+      iconColor: () => (available.value ? 'var(--el-color-success)' : 'var(--el-color-warning)'),
     },
     {
       name: 'Disabled',
