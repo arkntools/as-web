@@ -1,4 +1,5 @@
 import { useToggle } from '@vueuse/core';
+import IElDelete from '~icons/ep/delete';
 import IElMinus from '~icons/ep/minus';
 import IElPlus from '~icons/ep/plus';
 import IElSelect from '~icons/ep/select';
@@ -33,6 +34,20 @@ export const useRepoMenuItems = ({ dialogRef }: { dialogRef: Ref<InstanceType<ty
       },
       icon: () => ifSelectIcon(available.value, IElWarnTriangleFilled),
       iconColor: () => (available.value ? 'var(--el-color-success)' : 'var(--el-color-warning)'),
+    },
+    {
+      name: 'Clear cache',
+      handler: async () => {
+        try {
+          await ElMessageBox.confirm('Are you sure you want to clear the repository cache?', 'Warning', {
+            confirmButtonText: 'OK',
+            cancelButtonText: 'Cancel',
+            type: 'warning',
+          });
+          repoManager.clearCache();
+        } catch {}
+      },
+      icon: () => IElDelete,
     },
     {
       name: 'Disabled',

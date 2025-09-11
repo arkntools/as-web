@@ -53,6 +53,13 @@ export const useRepository = defineStore('repository', () => {
     resProgressMap.clear();
   };
 
+  const clearCache = () => {
+    resVerCache.clear();
+    resListCache.clear();
+    resCache.clear();
+    resCacheHash.clear();
+  };
+
   const curResList = computedAsync<ResourceItem[]>(
     async onCancel => {
       const source = curSource.value;
@@ -195,5 +202,6 @@ export const useRepository = defineStore('repository', () => {
     addSource,
     removeSource,
     selectSource,
+    clearCache,
   };
 });

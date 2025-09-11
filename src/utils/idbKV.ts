@@ -1,4 +1,4 @@
-import { createStore, del, get, set } from 'idb-keyval';
+import { clear, createStore, del, get, set } from 'idb-keyval';
 import type { UseStore } from 'idb-keyval';
 
 export class IdbKV<T = any> {
@@ -18,5 +18,9 @@ export class IdbKV<T = any> {
 
   del(key: IDBValidKey) {
     return del(key, this.store);
+  }
+
+  clear() {
+    return clear(this.store);
   }
 }
