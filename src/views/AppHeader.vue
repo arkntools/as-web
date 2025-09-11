@@ -65,7 +65,7 @@ const getEnvMenuItem = (
   icon: () => (setting.data.unityEnv === value ? IElSelect : undefined),
 });
 
-const { repoMenuItems } = useRepoMenuItems({ dialogRef: addRepoSourceDialogRef as any });
+const { repoMenuItems, handleRepoMenuClose } = useRepoMenuItems({ dialogRef: addRepoSourceDialogRef as any });
 
 const menuConfig = markRaw<MenuBarConfig>([
   {
@@ -145,6 +145,7 @@ const menuConfig = markRaw<MenuBarConfig>([
     name: 'Repository',
     icon: true,
     items: repoMenuItems,
+    onClose: handleRepoMenuClose,
   },
 ]);
 </script>

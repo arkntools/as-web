@@ -7,7 +7,7 @@
     :popper-options="popoverOptions"
     :hide-on-click="false"
     @command="handleCommand"
-    @visible-change="visible => (isOpen = visible)"
+    @visible-change="handleVisibleChange"
   >
     <el-button class="menu-btn" :class="{ active: isOpen }" plain color="#444" @mouseenter="handleMouseEnter">{{
       config.name
@@ -39,6 +39,7 @@ export interface MenuDropdownConfig {
   name: string;
   icon?: boolean;
   items: MaybeRefOrGetter<MenuDropdownConfigItem[]>;
+  onClose?: () => void;
 }
 
 export interface MenuDropdownConfigItem {
@@ -70,6 +71,11 @@ const handleCommand = (i: number) => {
   const item = toValue(props.config.items)[i];
   item.handler();
   if (!toValue(item.keepShowOnClick)) dropdownRef.value?.handleClose();
+};
+
+const handleVisibleChange = (visible: boolean) => {
+  isOpen.value = visible;
+  if (!visible) props.config.onClose?.();
 };
 
 const handleMouseEnter = () => {

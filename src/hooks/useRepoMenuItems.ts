@@ -93,7 +93,12 @@ export const useRepoMenuItems = ({ dialogRef }: { dialogRef: Ref<InstanceType<ty
     ...postItems,
   ]);
 
+  const handleRepoMenuClose = () => {
+    toggleRemoveMode(false);
+  };
+
   return {
     repoMenuItems,
+    handleRepoMenuClose,
   };
 };
