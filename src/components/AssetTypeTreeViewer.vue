@@ -22,5 +22,3 @@ const value = computed(() =>
   ),
 );
 </script>
-
-<style></style>

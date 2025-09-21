@@ -22,5 +22,3 @@ onMounted(() => {
 
 watch([() => text, () => resizeTrigger], update);
 </script>
-
-<style></style>
