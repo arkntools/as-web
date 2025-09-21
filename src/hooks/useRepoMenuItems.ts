@@ -1,5 +1,6 @@
 import { useToggle } from '@vueuse/core';
 import IElDelete from '~icons/ep/delete';
+import IElHelp from '~icons/ep/help';
 import IElMinus from '~icons/ep/minus';
 import IElPlus from '~icons/ep/plus';
 import IElSelect from '~icons/ep/select';
@@ -7,6 +8,7 @@ import IElWarnTriangleFilled from '~icons/ep/warn-triangle-filled';
 import type AddRepoSourceDialog from '@/components/AddRepoSourceDialog.vue';
 import type { MenuDropdownConfigItem } from '@/components/MenuDropdown.vue';
 import { useRepository } from '@/store/repository';
+import { openUrl } from '@/utils/common';
 import { useRepoAvailable } from './useRepoAvailable';
 
 const ifSelectIcon = (condition: boolean, otherwise?: Component) => (condition ? IElSelect : otherwise);
@@ -30,10 +32,17 @@ export const useRepoMenuItems = ({ dialogRef }: { dialogRef: Ref<InstanceType<ty
     {
       name: 'Install extension script',
       handler: () => {
-        window.open('https://greasyfork.org/scripts/548700', '_blank');
+        openUrl('https://greasyfork.org/scripts/548700');
       },
       icon: () => ifSelectIcon(available.value, IElWarnTriangleFilled),
       iconColor: () => (available.value ? 'var(--el-color-success)' : 'var(--el-color-warning)'),
+    },
+    {
+      name: 'Help',
+      handler: () => {
+        openUrl('https://github.com/arkntools/as-web/wiki/Repository');
+      },
+      icon: () => IElHelp,
     },
     {
       name: 'Clear cache',

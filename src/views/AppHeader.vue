@@ -23,6 +23,7 @@ import type { MenuDropdownConfigItem } from '@/components/MenuDropdown.vue';
 import { useRepoMenuItems } from '@/hooks/useRepoMenuItems';
 import { useAssetManager } from '@/store/assetManager';
 import { useSetting } from '@/store/setting';
+import { openUrl } from '@/utils/common';
 import ExportOptionsDialog from './components/ExportOptionsDialog.vue';
 import UnityCNOptionsDialog from './components/UnityCNOptionsDialog.vue';
 
@@ -38,7 +39,7 @@ const unityCNOptionsDialogRef = useTemplateRef('unityCNOptionsDialogRef');
 const addRepoSourceDialogRef = useTemplateRef('addRepoSourceDialogRef');
 
 const gotoGithub = () => {
-  window.open('https://github.com/arkntools/as-web', '_blank');
+  openUrl('https://github.com/arkntools/as-web');
 };
 
 const loadFiles = (list: FileList | null) => {
