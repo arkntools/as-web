@@ -1,5 +1,5 @@
 <template>
-  <VueMonacoEditor :value="value || ''" :options="options" :language="language" />
+  <VueMonacoEditor :value="value || ''" :options="options" :language="language" @mount="handleMount" />
 </template>
 
 <script setup lang="ts">
@@ -26,4 +26,17 @@ const options: editor.IStandaloneEditorConstructionOptions = {
     nonBasicASCII: false,
   },
 };
+
+let editorInstance: editor.IStandaloneCodeEditor | undefined;
+
+const handleMount = (editor: editor.IStandaloneCodeEditor) => {
+  editorInstance = editor;
+};
+
+watch(
+  () => props.value,
+  () => {
+    editorInstance?.setScrollTop(0);
+  },
+);
 </script>
